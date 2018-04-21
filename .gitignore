@@ -5,3 +5,5 @@
 *.d64
 *.prg
 *.swp
+*.vim
+tags
