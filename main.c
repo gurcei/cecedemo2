@@ -6,7 +6,7 @@
 #define PokeW(A,X) (*(unsigned int *)(A)) = (X)
 #define PeekW(A)   (*(unsigned int *)(A))
 
-#define _SID_ 0xD400
+#define _SID_ 0xD400U
 
 unsigned int addr;
 
@@ -95,6 +95,16 @@ int main(void)
   int k;  // generic loop variable
   int im = 0;   // the total length of the songs (in units of 1/16th measures)
 
+  int j = 0;
+  int wa = 0;
+  int wb = 0;
+  int dr = 0;
+  int oc = 0;
+  int nt = 0;
+  unsigned long fr = 0;
+  unsigned int hf;
+  unsigned int lf;
+
   // switch back to upper-case
   // https://www.cc65.org/mailarchive/2004-09/4446.html
   Poke(0xd018, 0x15);
@@ -102,11 +112,10 @@ int main(void)
   // 10 S = 54272 : FOR L = S TO S+24 : POKE L, 0 : NEXT
   init_sid();
 
-#if 1
   // 50 POKE S+10, 8: POKE S+22, 128: POKE S+23, 244 : REM Set high pulse width for voice 2 : Set high frequency for filter cutoff : Set resonance for filter and filter voice 3
-  Poke(_SID_+10U, 8);   // Set high pulse width for voice 2
-  Poke(_SID_+22U, 128); // Set high frequency for filter cutoff
-  Poke(_SID_+23U, 244); // Set resonance for filter and filter voice 3
+  Poke(_SID_+10, 8);   // Set high pulse width for voice 2
+  Poke(_SID_+22, 128); // Set high frequency for filter cutoff
+  Poke(_SID_+23, 244); // Set resonance for filter and filter voice 3
 
   
   // 100 FOR K = 0 TO 2 : REM Begin decoding loop for each voice.
@@ -125,16 +134,6 @@ int main(void)
 
     while (pvoice[idx] != 0)
     {
-      int j = 0;
-      int wa = 0;
-      int wb = 0;
-      int dr = 0;
-      int oc = 0;
-      int nt = 0;
-      long fr = 0;
-      unsigned int hf;
-      unsigned int lf;
-
       // 120 READ NM : REM Read coded note
       int nm = pvoice[idx];
 
@@ -148,7 +147,6 @@ int main(void)
 
       if (nm < 0) // if encoded note value is negative, this equates to silence, so set waveform controls to 0.
       {
-        printf("less\n");
         nm = -nm;
         wa = 0;
         wb = 0;
@@ -166,25 +164,27 @@ int main(void)
       // 170 FR = FQ(NT) : REM Get base frequency for this note.
       fr = fq[nt];
 
-      if (k == 0) // voice 1 debugging
+      /*if (k == 0 && idx < 20) // voice 1 debugging
       {
-        printf("nm=%d dr=%d oc=%d nt=%d fr=%d ", nm, dr, oc, nt, fr);
-      }
+        printf("nm=%d dr=%d oc=%d nt=%d fr=%lu\n", nm, dr, oc, nt, fr);
+      }*/
+
+      fr <<= 8;
 
       // 180 IF OC% = 7 THEN 200 : REM If highest octave, skip division loop.
       if (oc != 7)
       {
         int j;
         // 190 FOR J=6 TO OC% STEP -1: FR = FR / 2: NEXT : REM Divide base frequency by 2 appropriate number of times.
-        for (j = 6; j != oc; j--)
-          fr = fr / 2;
+        for (j = 6; j >= oc; j--)
+          fr = fr / 2U;
       }
 
-      //fr = fr / 65536;
+      fr >>= 8;
 
       // 200 HF% = FR / 256 : LF% = FR - 256 * HF% : REM Get high and low frequency bytes.
-      hf = fr / 256;
-      lf = fr - 256 * hf;
+      hf = fr / 256U;
+      lf = fr - 256U * hf;
 
       // 210 IF DR% = 1 THEN H(K,I) = HF% : L(K, I) = LF% : C(K, I) = WA : I=I+1 : GOTO 120: REM If sixteenth note, set activity array: high frequency, low frequency and waveform control (voice on)
       if (dr == 1)
@@ -244,6 +244,7 @@ int main(void)
   // 540 FOR I = 0 TO IM : REM Start loop for every 1/16th of a measure.
   for (i = 0; i <= im; i++)
   {
+    //printf("fr=%u\n", l[0][i] + 256*h[0][i]);
     // 550 POKE S,   L(0, I) : POKE S+7,  L(1, I) : POKE S+14, L(2, I) : REM POKE low frequency from activity array for all voices.
     Poke(_SID_,    l[0][i]);
     Poke(_SID_+7,  l[1][i]);
@@ -308,15 +309,6 @@ int main(void)
   // d = duration, o = octave, n = note number (in scale)
   // A silence is obtained by using the negative of the duration number
   // (number of 1/16ths of a measure * 128)
-
-  while (1)
-  {
-    //printf("hello world!\n");
-    //unsigned char key = cgetc();
-    //printf("key = %u\n", key);
-  }
-
-#endif
 
   return 0;
 }
