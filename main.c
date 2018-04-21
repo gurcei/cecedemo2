@@ -5,7 +5,8 @@ void main(void)
 {
   while (1)
   {
-    unsigned char key = cgetc();
-    printf("key = %u\n", key);
+    printf("hello world!\n");
+    //unsigned char key = cgetc();
+    //printf("key = %u\n", key);
   }
 }
