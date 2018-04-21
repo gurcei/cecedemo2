@@ -5,7 +5,10 @@ LOPTS=	-C gidemo.cfg
 
 all: gidemo.d64
 
-main.s:	main.c
+run:
+	/Applications/Vice/x64.app/Contents/MacOS/x64 gidemo.d64 &
+
+main.s:	main.c gidemo.cfg
 	$(CC65) $(COPTS) -o $@ $<
 
 gidemo.prg: main.s
