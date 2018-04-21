@@ -1,6 +1,6 @@
 CC65=	/usr/local/bin/cc65
 CL65=	/usr/local/bin/cl65
-COPTS=	-t c64 -O -Or -Oi -Os --cpu 65c02
+COPTS=	-t c64 -O -Or -Oi -Os --cpu 6502
 LOPTS=	-C gidemo.cfg
 
 all: gidemo.d64

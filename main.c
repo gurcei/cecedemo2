@@ -6,17 +6,18 @@
 #define PokeW(A,X) (*(unsigned int *)(A)) = (X)
 #define PeekW(A)   (*(unsigned int *)(A))
 
-#define _SID_ 54272U
+#define _SID_ 0xD400
+
+unsigned int addr;
 
 void init_sid(void)
 {
-  unsigned int addr;
   for (addr = _SID_; addr <= (_SID_+24); addr++)
   {
-    printf("addr = %d\n", addr);
     Poke(addr, 0);
   }
 }
+
 
 // voice 1
 int v1[] =
@@ -87,8 +88,7 @@ unsigned char c[2][200];
 // L = low-byte of frequency
 // C = control byte of waveform
 
-
-void main(void)
+int main(void)
 {
   int t;  // loop variable used for timers
   int i;  // generic loop variable
@@ -102,8 +102,7 @@ void main(void)
   // 10 S = 54272 : FOR L = S TO S+24 : POKE L, 0 : NEXT
   init_sid();
 
-  return;
-
+#if 1
   // 50 POKE S+10, 8: POKE S+22, 128: POKE S+23, 244 : REM Set high pulse width for voice 2 : Set high frequency for filter cutoff : Set resonance for filter and filter voice 3
   Poke(_SID_+10U, 8);   // Set high pulse width for voice 2
   Poke(_SID_+22U, 128); // Set high frequency for filter cutoff
@@ -121,6 +120,8 @@ void main(void)
     if (k==0) pvoice = v1;
     if (k==1) pvoice = v2;
     if (k==2) pvoice = v3;
+
+    printf("\n\n");
 
     while (pvoice[idx] != 0)
     {
@@ -143,9 +144,11 @@ void main(void)
 
       // 140 WA = V(K) : WB = WA - 1 : IF NM < 0 THEN NM = -NM : WA = 0 : WB = 0 : REM Set waveform controls to proper voice. If silence, set waveform controls to 0.
       wa = v[k]; // set the waveform control to proper voice
+      wb = wa - 1;
 
-      if (nm < 0); // if encoded note value is negative, this equates to silence, so set waveform controls to 0.
+      if (nm < 0) // if encoded note value is negative, this equates to silence, so set waveform controls to 0.
       {
+        printf("less\n");
         nm = -nm;
         wa = 0;
         wb = 0;
@@ -154,14 +157,19 @@ void main(void)
       // 150 DR% = NM / 128 : OC% = (NM - 128 * DR%) / 16 : REM Decode duration and octave.
 
       // Encoding = dddd dooo nnnn  (where d=duration, o=octave, n=note)
-      dr = nm >> 7;
-      oc = (nm - 128*dr) >> 4;  // ok, now I get what they're doing here, overly verbose masking :)
+      dr = nm / 128;
+      oc = (nm - 128*dr) / 16;  // ok, now I get what they're doing here, overly verbose masking :)
 
       // 160 NT = NM - 128 * DR% - 16 * OC% : REM Decode note.
       nt = (nm - 128*dr) - 16*oc;   // more overly verbose masking :)
 
       // 170 FR = FQ(NT) : REM Get base frequency for this note.
-      fr = fq[nt]*65536;
+      fr = fq[nt];
+
+      if (k == 0) // voice 1 debugging
+      {
+        printf("nm=%d dr=%d oc=%d nt=%d fr=%d ", nm, dr, oc, nt, fr);
+      }
 
       // 180 IF OC% = 7 THEN 200 : REM If highest octave, skip division loop.
       if (oc != 7)
@@ -172,7 +180,7 @@ void main(void)
           fr = fr / 2;
       }
 
-      fr = fr / 65536;
+      //fr = fr / 65536;
 
       // 200 HF% = FR / 256 : LF% = FR - 256 * HF% : REM Get high and low frequency bytes.
       hf = fr / 256;
@@ -200,9 +208,9 @@ void main(void)
       h[k][i] = hf;
       l[k][i] = lf;
       c[k][i] = wb;
-      i++;
 
       // 240 I = I + 1 : GOTO 120 : REM Increment pointer to activity array. Get next note.
+      i++;
       idx++;
     }
 
@@ -252,13 +260,13 @@ void main(void)
     Poke(_SID_+18, c[2][i]);
 
     // 580 FOR T = 1 TO 80 : NEXT : NEXT : REM Timing loop for 1/16th of a measure and back for next 1/16th measure.
-    for (t = 0; t < 500; t++)
+    for (t = 0; t < 1000; t++)
       ;
   }
 
   // 590 FOR T = 1 TO 200 : NEXT : POKE S+24, 0 : REM Pause, then turns off volume.
   // Final pause before ending eh...
-  for (t = 0; t < 2500; t++)
+  for (t = 0; t < 5000; t++)
     ;
 
   // turn off volume
@@ -303,8 +311,12 @@ void main(void)
 
   while (1)
   {
-    printf("hello world!\n");
+    //printf("hello world!\n");
     //unsigned char key = cgetc();
     //printf("key = %u\n", key);
   }
+
+#endif
+
+  return 0;
 }
