@@ -59,7 +59,7 @@ int v3[] =
   308, 313, 297,
   1586, 567, 560, 311, 309,
   308, 309, 306, 308,
-  1577, 299, 295, 306, 310, 310, 304,
+  1577, 299, 295, 306, 310, 311, 304,
   562, 546, 1575,
   0
 };
@@ -170,10 +170,10 @@ int main(void)
       // 170 FR = FQ(NT) : REM Get base frequency for this note.
       fr = fq[nt];
 
-      /*if (k == 0 && idx < 20) // voice 1 debugging
+      if (k == 1) // voice 2 debugging
       {
-        printf("nm=%d dr=%d oc=%d nt=%d fr=%lu\n", nm, dr, oc, nt, fr);
-      }*/
+        //printf("nm=%d dr=%d oc=%d nt=%d fr=%lu\n", nm, dr, oc, nt, fr);
+      }
 
       fr <<= 8;
 
@@ -199,6 +199,8 @@ int main(void)
         l[k][i] = lf;
         c[k][i] = wa;
         i++;
+        idx++;
+        continue;
       }
 
       // 220 FOR J=1 TO DR%-1: H(K, I) = HF% : L(K, I) = LF% : C(K, I) = WA : I=I+1 : NEXT : REM For all but last beat of note, set activity array: high frequency, low frequency, waveform control (voice on)
@@ -215,9 +217,9 @@ int main(void)
       l[k][i] = lf;
       c[k][i] = wb;
 
-      if (k == 0)
+      //if (k == 0)
       {
-        //printf("i=%d,hf=%d,lf=%d,wa=%d,wb=%d\n",i,hf,lf,wa,wb);
+        //printf("v=%d,i=%d,hf=%d,lf=%d,wa=%d,wb=%d\n",k,i,hf,lf,wa,wb);
         //cgetc();
       }
 
