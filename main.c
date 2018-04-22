@@ -63,7 +63,7 @@ void init_sid(void)
   }
 }
 
-//#define VERSE
+#define VERSE
 #define CHORUS
 
 
@@ -342,6 +342,98 @@ int v2[] =
   -D1_4,
 #endif // VERSE
 
+  // CHORUS
+  // BAR1
+  NE + O1 + D1_4,
+  -D1_8,
+  NE + O1 + D1_8,
+  -D1_8,
+  NE + O1 + D1_8,
+  -D1_4,
+
+  // BAR2
+  NE + O1 + D1_4,
+  -D1_8,
+  NE + O1 + D1_8,
+  -D1_8,
+  NE + O1 + D1_8,
+  -D1_4,
+
+  // BAR3
+  NE + O1 + D1_4,
+  -D1_8,
+  NE + O1 + D1_8,
+  -D1_8,
+  NE + O1 + D1_8,
+  -D1_4,
+
+  // BAR4
+  NE + O1 + D1_4,
+  -D1_8,
+  NE + O1 + D1_8,
+  -D1_8,
+  NE + O1 + D1_8,
+  -D1_4,
+
+  // BAR5
+  NE + O1 + D1_4,
+  -D1_8,
+  NE + O1 + D1_8,
+  -D1_8,
+  NE + O1 + D1_8,
+  -D1_4,
+
+  // BAR6
+  NA + O1 + D1_4,
+  -D1_8,
+  NA + O1 + D1_8,
+  -D1_8,
+  NA + O1 + D1_8,
+  -D1_4,
+
+  // BAR7
+  NA + O1 + D1_4,
+  -D1_8,
+  NA + O1 + D1_8,
+  -D1_8,
+  NA + O1 + D1_8,
+  -D1_4,
+
+  // BAR8
+  NB + O0 + D1_4,
+  -D1_8,
+  NB + O0 + D1_8,
+  -D1_8,
+  NB + O0 + D1_8,
+  -D1_4,
+
+  // BAR9
+  NG + O1 + D1_4,
+  -D1_8,
+  NG + O1 + D1_8,
+  -D1_8,
+  NG + O1 + D1_8,
+  -D1_4,
+  // BAR10
+  ND + O1 + D1_4,
+  -D1_8,
+  ND + O1 + D1_8,
+  -D1_8,
+  ND + O1 + D1_8,
+  -D1_4,
+  // BAR11
+  NC + O1 + D1_4,
+  -D1_8,
+  NC + O1 + D1_8,
+  ND + O1 + D1_4,
+  ND + O1 + D1_4,
+  // BAR12
+  NE + O1 + D1_4,
+  -D1_8,
+  NE + O1 + D1_8,
+  -D1_8,
+  NE + O1 + D1_8,
+  -D1_4,
 
   0
 };
@@ -434,6 +526,98 @@ int v3[] =
   -D1_4,
 #endif // VERSE
 
+  // CHORUS
+  // BAR1
+  NE + O2 + D1_4,
+  -D1_8,
+  NE + O2 + D1_8,
+  -D1_8,
+  NE + O2 + D1_8,
+  -D1_4,
+
+  // BAR2
+  NE + O2 + D1_4,
+  -D1_8,
+  NE + O2 + D1_8,
+  -D1_8,
+  NE + O2 + D1_8,
+  -D1_4,
+
+  // BAR3
+  NE + O2 + D1_4,
+  -D1_8,
+  NE + O2 + D1_8,
+  -D1_8,
+  NE + O2 + D1_8,
+  -D1_4,
+
+  // BAR4
+  NE + O2 + D1_4,
+  -D1_8,
+  NE + O2 + D1_8,
+  -D1_8,
+  NE + O2 + D1_8,
+  -D1_4,
+
+  // BAR5
+  NE + O2 + D1_4,
+  -D1_8,
+  NE + O2 + D1_8,
+  -D1_8,
+  NE + O2 + D1_8,
+  -D1_4,
+
+  // BAR6
+  NA + O2 + D1_4,
+  -D1_8,
+  NA + O2 + D1_8,
+  -D1_8,
+  NA + O2 + D1_8,
+  -D1_4,
+
+  // BAR7
+  NA + O2 + D1_4,
+  -D1_8,
+  NA + O2 + D1_8,
+  -D1_8,
+  NA + O2 + D1_8,
+  -D1_4,
+
+  // BAR8
+  NB + O1 + D1_4,
+  -D1_8,
+  NB + O1 + D1_8,
+  -D1_8,
+  NB + O1 + D1_8,
+  -D1_4,
+
+  // BAR9
+  NG + O2 + D1_4,
+  -D1_8,
+  NG + O2 + D1_8,
+  -D1_8,
+  NG + O2 + D1_8,
+  -D1_4,
+  // BAR10
+  ND + O2 + D1_4,
+  -D1_8,
+  ND + O2 + D1_8,
+  -D1_8,
+  ND + O2 + D1_8,
+  -D1_4,
+  // BAR11
+  NC + O2 + D1_4,
+  -D1_8,
+  NC + O2 + D1_8,
+  ND + O2 + D1_4,
+  ND + O2 + D1_4,
+  // BAR12
+  NE + O2 + D1_4,
+  -D1_8,
+  NE + O2 + D1_8,
+  -D1_8,
+  NE + O2 + D1_8,
+  -D1_4,
 
   0
 };
@@ -460,9 +644,9 @@ unsigned int v[3] = { 17, 65, 33 };
 
 
 // 20 DIM H(2,200), L(2,200), C(2,200)  : REM Dimension array to contain activity of song, 1/16th of a measure per location
-unsigned char h[3][200];
-unsigned char l[3][200];
-unsigned char c[3][200];
+unsigned char h[3][400];
+unsigned char l[3][400];
+unsigned char c[3][400];
 
 // H = high-byte of frequency
 // L = low-byte of frequency
@@ -554,7 +738,7 @@ int main(void)
         //printf("nm=%d dr=%d oc=%d nt=%d fr=%lu\n", nm, dr, oc, nt, fr);
       }
 
-      fr <<= 8;
+      fr <<= 16;
 
       // 180 IF OC% = 7 THEN 200 : REM If highest octave, skip division loop.
       if (oc != 7)
@@ -562,10 +746,10 @@ int main(void)
         int j;
         // 190 FOR J=6 TO OC% STEP -1: FR = FR / 2: NEXT : REM Divide base frequency by 2 appropriate number of times.
         for (j = 6; j >= oc; j--)
-          fr = fr / 2U;
+          fr = fr / 2UL;
       }
 
-      fr >>= 8;
+      fr >>= 16;
 
       // 200 HF% = FR / 256 : LF% = FR - 256 * HF% : REM Get high and low frequency bytes.
       hf = fr / 256U;
