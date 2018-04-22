@@ -33,6 +33,7 @@ int v1[] =
 
 // voice 2
 int v2[] =
+
 {
   583, 585, 583, 583, 327, 329,
   1611, 583, 585, 578, 578, 578,
@@ -80,9 +81,9 @@ unsigned int v[3] = { 17, 65, 33 };
 
 
 // 20 DIM H(2,200), L(2,200), C(2,200)  : REM Dimension array to contain activity of song, 1/16th of a measure per location
-unsigned char h[2][200];
-unsigned char l[2][200];
-unsigned char c[2][200];
+unsigned char h[3][200];
+unsigned char l[3][200];
+unsigned char c[3][200];
 
 // H = high-byte of frequency
 // L = low-byte of frequency
@@ -122,20 +123,25 @@ int main(void)
   for (k = 0; k <= 2; k++)
   {
     // 110 I=0 : REM Initialise pointer to activity array.
-    int i = 0;
-    int idx = 0;
+    int i = 0;    // index into the activity buffer
+    int idx = 0;  // the index into the notes within a single single
 
     int *pvoice;
     if (k==0) pvoice = v1;
     if (k==1) pvoice = v2;
     if (k==2) pvoice = v3;
 
-    printf("\n\n");
+    //printf("v=%d,l=%d,h=%d,c=%d\n", k, l[k], h[k], c[k]);
 
     while (pvoice[idx] != 0)
     {
       // 120 READ NM : REM Read coded note
       int nm = pvoice[idx];
+
+      //printf("i=%d : ",i);
+
+      //else
+      //  printf("fine\n");
 
       // 130 IF NM = 0 THEN 250 : REM If coded note is zero, then next voice.
       if (nm == 0)
@@ -209,6 +215,13 @@ int main(void)
       l[k][i] = lf;
       c[k][i] = wb;
 
+      if (k == 0)
+      {
+        //printf("i=%d,hf=%d,lf=%d,wa=%d,wb=%d\n",i,hf,lf,wa,wb);
+        //cgetc();
+      }
+
+
       // 240 I = I + 1 : GOTO 120 : REM Increment pointer to activity array. Get next note.
       i++;
       idx++;
@@ -259,6 +272,13 @@ int main(void)
     Poke(_SID_+4,  c[0][i]);
     Poke(_SID_+11, c[1][i]);
     Poke(_SID_+18, c[2][i]);
+
+    /*
+    printf("l0=%d,l1=%d,l2=%d\n",l[0][i], l[1][i], l[2][i]);
+    printf("h0=%d,h1=%d,h2=%d\n",h[0][i], h[1][i], h[2][i]);
+    printf("c0=%d,c1=%d,c2=%d\n",c[0][i], c[1][i], c[2][i]);
+    cgetc();
+    */
 
     // 580 FOR T = 1 TO 80 : NEXT : NEXT : REM Timing loop for 1/16th of a measure and back for next 1/16th measure.
     for (t = 0; t < 1000; t++)
