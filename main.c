@@ -1,3 +1,9 @@
+/*******************************************
+ * USING MULTIPLE VOICE: Example 2
+ * - BASIC code taken from the Commodore 64 Programmer's reference Guide
+ * - Port to c-code by Gurce Isikyildiz 22/04/2018
+ * - compile with cc65
+ *******************************************/
 #include <stdio.h>
 #include <conio.h>
 
