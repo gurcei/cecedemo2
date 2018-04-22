@@ -14,7 +14,16 @@
 
 #define _SID_ 0xD400U
 
-// Encoding = dddd dooo nnnn  (where d=duration, o=octave, n=note)
+// Encoding = 0brm dddd dooo nnnn  (where d=duration, o=octave, n=note)
+//
+// My extra fields are:
+// - m = marker for the place to repeat back to (use nnnn as a counter of how many times to repeat)
+// - r = repeat back to marker
+// - b = repeat back to beginning (wipe out any prior repeat counters)
+
+#define MARKER 4096U
+#define REPEAT_BACK_TO_MARKER 8192U
+#define REPEAT_TO_BEGINNING 16384U
 
 // durations
 #define D1_16 128
@@ -71,6 +80,8 @@ void init_sid(void)
 int v1[] =
 {
 #ifdef VERSE
+  MARKER,       // place a marker for the REPEAT_BACK_TO_MARKER token to jump back to
+
   //BAR1          : Tu ngay hai dua yeu nhau mong
   -D1_8,
   NE + O5 + D1_8,
@@ -163,6 +174,8 @@ int v1[] =
   NE + O5 +D1,
 #endif // VERSE
 
+  REPEAT_BACK_TO_MARKER + 1,  // repeat back to marker once
+
   // CHORUS
   // BAR1         : tup leu ly
   -D1_4,
@@ -249,6 +262,8 @@ int v1[] =
 
   // BAR12        : xinh
   NE + O5 + D1,
+
+  REPEAT_TO_BEGINNING,
 
   0
 };
@@ -669,6 +684,12 @@ int main(void)
   unsigned int hf;
   unsigned int lf;
 
+  int marker_pos = 0;     // the positon of the marker to repeat back to
+  int repeat_to_marker_pos = 0;   // the position of the repeat-to-marker token
+  int repeat_to_marker_count = 0; // the number of times to repeat back to marker
+  int repeat_to_beginning_pos = 0; // the position of the repeat-to-beginning token
+  int rptcnt = 0;
+  
   // switch back to upper-case
   // https://www.cc65.org/mailarchive/2004-09/4446.html
   Poke(0xd018, 0x15);
@@ -681,7 +702,6 @@ int main(void)
   Poke(_SID_+22, 128); // Set high frequency for filter cutoff
   Poke(_SID_+23, 244); // Set resonance for filter and filter voice 3
 
-  
   // 100 FOR K = 0 TO 2 : REM Begin decoding loop for each voice.
   for (k = 0; k <= 2; k++)
   {
@@ -709,6 +729,28 @@ int main(void)
       // 130 IF NM = 0 THEN 250 : REM If coded note is zero, then next voice.
       if (nm == 0)
         break;
+
+      if ((unsigned int)nm == MARKER)
+      {
+        marker_pos = i;
+        idx++;
+        continue;
+      }
+
+      if (nm > 0 && (nm & REPEAT_BACK_TO_MARKER))
+      {
+        repeat_to_marker_pos = i;
+        repeat_to_marker_count = (nm - REPEAT_BACK_TO_MARKER);
+        idx++;
+        continue;
+      }
+
+      if ((unsigned int)nm == REPEAT_TO_BEGINNING)
+      {
+        repeat_to_beginning_pos = i;
+        idx++;
+        continue;
+      }
 
       // 140 WA = V(K) : WB = WA - 1 : IF NM < 0 THEN NM = -NM : WA = 0 : WB = 0 : REM Set waveform controls to proper voice. If silence, set waveform controls to 0.
       wa = v[k]; // set the waveform control to proper voice
@@ -820,8 +862,27 @@ int main(void)
   Poke(_SID_+24, 31);   // Set volume 15, low-pass filtering
 
   // 540 FOR I = 0 TO IM : REM Start loop for every 1/16th of a measure.
-  for (i = 0; i <= im; i++)
+  rptcnt = repeat_to_marker_count;
+  i = 0;
+  while (i <= im)
   {
+    if (i == repeat_to_marker_pos && i != 0)
+    {
+      if (rptcnt > 0)
+      {
+        rptcnt--;
+        i = marker_pos;
+        continue;
+      }
+    }
+
+    if (i == repeat_to_beginning_pos && i != 0)
+    {
+      i = 0;
+      rptcnt = repeat_to_marker_count;
+      continue;
+    }
+
     //printf("fr=%u\n", l[0][i] + 256*h[0][i]);
     // 550 POKE S,   L(0, I) : POKE S+7,  L(1, I) : POKE S+14, L(2, I) : REM POKE low frequency from activity array for all voices.
     Poke(_SID_,    l[0][i]);
@@ -848,6 +909,8 @@ int main(void)
     // 580 FOR T = 1 TO 80 : NEXT : NEXT : REM Timing loop for 1/16th of a measure and back for next 1/16th measure.
     for (t = 0; t < 1000; t++)
       ;
+
+    i++;
   }
 
   // 590 FOR T = 1 TO 200 : NEXT : POKE S+24, 0 : REM Pause, then turns off volume.
