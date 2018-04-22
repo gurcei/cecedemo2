@@ -14,6 +14,45 @@
 
 #define _SID_ 0xD400U
 
+// Encoding = dddd dooo nnnn  (where d=duration, o=octave, n=note)
+
+// durations
+#define D1_16 128
+#define D1_8  256
+#define D1_8D 384
+#define D1_4  512
+#define D1_4_1_16 640
+#define D1_4D 768
+#define D1_2  1024
+#define D1_2_1_16 1152
+#define D1_2_1_8  1280
+#define D1_2D     1536
+#define D1        2048
+
+// notes in scale
+#define NC  0
+#define NCs 1
+#define ND  2
+#define NDs 3
+#define NE  4
+#define NF  5
+#define NFs 6
+#define NG  7
+#define NGs 8
+#define NA  9
+#define NAs 10
+#define NB  11
+
+// octaves
+#define O0  0
+#define O1  16
+#define O2  32
+#define O3  48
+#define O4  64
+#define O5  80
+#define O6  96
+#define O7  112
+
 unsigned int addr;
 
 void init_sid(void)
@@ -28,6 +67,14 @@ void init_sid(void)
 // voice 1
 int v1[] =
 {
+  NE + O5 + D1_4,
+  ND + O5 + D1_4,
+  NC + O5 + D1_4,
+  ND + O5 + D1_4,
+  NE + O5 + D1_4,
+  NE + O5 + D1_4,
+  NE + O5 + D1_4,
+  0,
   594, 594, 594, 596, 596,
   1618, 587, 592, 587, 585, 331, 336,
   1097, 583, 585, 585, 585, 587, 587,
@@ -41,6 +88,7 @@ int v1[] =
 int v2[] =
 
 {
+  0,
   583, 585, 583, 583, 327, 329,
   1611, 583, 585, 578, 578, 578,
   196, 198, 583, 326, 578,
@@ -56,6 +104,7 @@ int v2[] =
 // voice 3
 int v3[] =
 {
+  0,
   567, 566, 567, 304, 306, 308, 310,
   1591, 567, 311, 310, 567,
   306, 304, 299, 308,
@@ -81,6 +130,11 @@ unsigned int fq[12] =
   54502U, 57743U, 61176U, 64814U
 };
 
+// Taking a look at the Commodore 64 Programmer's Reference Guide
+// "Appendix E - Musical Note Values" can be assesed to learn which notes
+// are referenced in the array above
+// C7  : 34334U = 0x861E : HI = 0x86 = 134 : LO = 0x1E = 30
+// Cs7 : 36376U = 0x8E18 = HI = 0x8E = 142 : LO = 0x18 = 24
 
 // 40 V(0) = 17: V(1) = 65: V(2) = 33 : REM Store waveform control byte for each voice
 unsigned int v[3] = { 17, 65, 33 };
