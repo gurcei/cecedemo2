@@ -67,21 +67,97 @@ void init_sid(void)
 // voice 1
 int v1[] =
 {
+  //BAR1          : Tu ngay hai dua yeu nhau mong
+  -D1_8,
+  NE + O5 + D1_8,
+  NE + O5 + D1_8,
+  NG + O5 + D1_8,
+  NB + O5 + D1_8,
+  NA + O5 + D1_8,
+  NG + O5 + D1_8,
+  NB + O4 + D1_8,
+  //BAR2          : uoc that nhieu
+  NB + O5 + D1_4,
+  NE + O5 + D1_8,
   NE + O5 + D1_4,
-  ND + O5 + D1_4,
-  NC + O5 + D1_4,
-  ND + O5 + D1_4,
-  NE + O5 + D1_4,
-  NE + O5 + D1_4,
-  NE + O5 + D1_4,
-  0,
-  594, 594, 594, 596, 596,
-  1618, 587, 592, 587, 585, 331, 336,
-  1097, 583, 585, 585, 585, 587, 587,
-  1609, 585, 331, 337, 594, 594, 593,
-  1618, 594, 596, 594, 592, 587,
-  1616, 587, 585, 331, 336, 841, 327,
-  1607, 0
+  -D1_4D,
+
+  //BAR3          : tu ngay hai dua yeu nhau long
+  -D1_8,
+  NE + O5 + D1_8,
+  NE + O5 + D1_8,
+  NG + O5 + D1_8,
+  NB + O5 + D1_8,
+  NA + O5 + D1_8,
+  NG + O5 + D1_8,
+  NB + O4 + D1_8,
+  //BAR4          : uoc bao nhieu
+  NB + O5 + D1_4,
+  NA + O5 + D1_8,
+  NA + O5 + D1_4,
+  -D1_4D,
+
+  //BAR5          : Mong vang hai dua co chi la
+  -D1_8,
+  NA + O5 + D1_8,
+  NA + O5 + D1_8,
+  NB + O5 + D1_8,
+  NC + O6 + D1_8,
+  NB + O5 + D1_8,
+  NA + O5 + D1_8,
+  NE + O5 + D1_8,
+  //BAR6          : qua xa xoi ta mo mot
+  NE + O6 + D1_4,
+  NB + O5 + D1_8,
+  NB + O5 + D1_8,
+  -D1_8,
+  NB + O5 + D1_8,
+  NB + O5 + D1_8,
+  NG + O5 + D1_8,
+
+  //BAR7          : mai nha tranh, ta mo mot
+  NB + O5 + D1_4,
+  NG + O5 + D1_8,
+  NA + O5 + D1_8,
+  -D1_8,
+  NA + O5 + D1_8,
+  NA + O5 + D1_8,
+  NG + O5 + D1_8,
+
+  //BAR8          : tup leu tinh. Doi minh dep
+  NB + O5 + D1_4,
+  NE + O5 + D1_8,
+  NE + O5 + D1_8,
+  -D1_8,
+  NE + O5 + D1_8,
+  NE + O5 + D1_8,
+  NE + O5 + D1_8,
+
+  //BAR9          : mai voi anh va
+  NB + O5 + D1_8,
+  -D1_8,
+  NB  + O5 + D1_4,
+  NFs + O5 + D1_8,
+  NA  + O5 + D1_8,
+  NFs + O5 + D1_8,
+  ND  + O5 + D1_8,
+  //BAR10         : em doi minh dep
+  NE  + O5 + D1_4,
+  -D1_4D,
+  NE + O5 + D1_8,
+  NE + O5 + D1_8,
+  NE + O5 + D1_8,
+  //BAR11         : mai duoi tup leu
+  NB + O5 + D1_8,
+  -D1_8,
+  NB + O5 + D1_4,
+  NFs + O5 + D1_8,
+  NA  + O5 + D1_8,
+  NFs + O5 + D1_8,
+  ND  + O5 + D1_8,
+  //BAR12         : xinh
+  NE + O5 +D1,
+  0
 };
 
 // voice 2
