@@ -63,10 +63,14 @@ void init_sid(void)
   }
 }
 
+//#define VERSE
+#define CHORUS
+
 
 // voice 1
 int v1[] =
 {
+#ifdef VERSE
   //BAR1          : Tu ngay hai dua yeu nhau mong
   -D1_8,
   NE + O5 + D1_8,
@@ -157,6 +161,95 @@ int v1[] =
   ND  + O5 + D1_8,
   //BAR12         : xinh
   NE + O5 +D1,
+#endif // VERSE
+
+  // CHORUS
+  // BAR1         : tup leu ly
+  -D1_4,
+  NE + O6 + D1_4,
+  NB + O5 + D1_4,
+  ND + O6 + D1_4,
+
+  // BAR2         : tuong cua anh va cua em
+  NE + O5 + D1_4,
+  NE + O5 + D1_8,
+  NB + O5 + D1_4,
+  NB + O4 + D1_8,
+  NB + O4 + D1_8,
+  ND + O5 + D1_8,
+
+  // BAR3         : em, dau dau nao anh oi
+  NE + O5 + D1_4D,
+  NE + O7 + D1_4,
+  NE + O7 + D1_8,
+  ND + O7 + D1_8,
+  NE + O7 + D1_8,
+
+  // BAR4         : oi tup leu ly
+  NE + O7 + D1_8,
+  -D1_8,
+  NE + O6 + D1_4,
+  NB + O5 + D1_4,
+  ND + O6 + D1_4,
+
+  // BAR5         : tuong cua em va cua
+  NE + O5 + D1_4,
+  NE + O5 + D1_8,
+  NB + O5 + D1_4,
+  NE + O5 + D1_8,
+  NE + O5 + D1_8,
+  NG + O5 + D1_8,
+
+  // BAR6         : anh, dau dau nao em
+  NA + O5 + D1_4D,
+  NA + O7 + D1_4,
+  NA + O7 + D1_8,
+  NG + O7 + D1_8,
+  NA + O7 + D1_8,
+ 
+  // BAR7         : oh tup leu ly
+  NA + O7 + D1_8,
+  -D1_8,
+  NE + O6 + D1_4,
+  NB + O5 + D1_4,
+  ND + O6 + D1_4,
+
+  // BAR8         : tuong do ta xay bang
+  NE + O5 + D1_4,
+  -D1_8,
+  NE + O6 + D1_4,
+  ND + O6 + D1_8,
+  ND + O6 + D1_8,
+  NB + O5 + D1_8,
+
+  // BAR9         : duyen bang tinh khong ai ma
+  ND + O6 + D1_4,
+  NA + O5 + D1_8,
+  NA + O5 + D1_8,
+  -D1_8,
+  NB + O5 + D1_8,
+  NB + O5 + D1_8,
+  NG + O5 + D1_8,
+
+  // BAR10        : yeu bang minh khi ta dung
+  NA + O5 + D1_4,
+  NE + O5 + D1_8,
+  NE + O5 + D1_8,
+  -D1_8,
+  NFs + O5 + D1_8,
+  NFs + O5 + D1_8,
+  NA + O5 + D1_8,
+
+  // BAR11        : nhin mot dan con
+  NB + O4 + D1_8,
+  -D1_4,
+  NB + O4 + D1_8,
+  ND + O5 + D1_4,
+  NE + O5 + D1_4,
+
+  // BAR12        : xinh
+  NE + O5 + D1,
+
   0
 };
 
@@ -164,6 +257,7 @@ int v1[] =
 int v2[] =
 
 {
+#ifdef VERSE
   // BAR1
   NE + O1 + D1_4,
   -D1_8,
@@ -246,12 +340,16 @@ int v2[] =
   -D1_8,
   NE + O1 + D1_8,
   -D1_4,
+#endif // VERSE
+
+
   0
 };
 
 // voice 3
 int v3[] =
 {
+#ifdef VERSE
   // BAR1
   NE + O2 + D1_4,
   -D1_8,
@@ -334,6 +432,9 @@ int v3[] =
   -D1_8,
   NE + O2 + D1_8,
   -D1_4,
+#endif // VERSE
+
+
   0
 };
 
