@@ -758,7 +758,7 @@ void intro_screen(void)
   printf("  aka. 'vietnamese karaoke machine'!!\n");
   printf("\n\n");
 
-  printf("  tup leu ly luong - by hoang thi tho\n\n\n");
+  printf("  tup leu ly tuong - by hoang thi tho\n\n\n");
   printf("         dedicated to my camcam ;)\n\n\n");
   printf("         press any key to begin");
   cgetc();
