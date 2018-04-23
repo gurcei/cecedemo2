@@ -9,18 +9,18 @@ run:
 	/Applications/Vice/x64.app/Contents/MacOS/x64 gidemo.d64 &
 
 main.s:	main.c gidemo.cfg
-	$(CC65) $(COPTS) -o $@ $<
+	$(CC65) $(COPTS) --add-source -o $@ $<
 
 gidemo.prg: main.s
-	$(CL65) $(COPTS) $(LOPTS) -vm -l gidemo.lst -m gidemo.map -o gidemo.prg main.s
+	$(CL65) $(COPTS) $(LOPTS) -vm -l gidemo.list -m gidemo.map -o gidemo.prg main.s
 
 gidemo.d64: gidemo.prg
 	rm -f gidemo.d64
-	cbmconvert -v2 -D4o gidemo.d64 gidemo.prg
+	cbmconvert -v2 -D4o gidemo.d64 gidemo.prg hut.seq
 
 clean:
 	rm -f gidemo.map
 	rm -f gidemo.prg
 	rm -f main.s main.o
-	rm -f gidemo.lst
+	rm -f gidemo.list
 	rm -f gidemo.d64

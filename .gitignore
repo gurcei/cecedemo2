@@ -1,6 +1,6 @@
 *.o
 *.s
-*.lst
+*.list
 *.map
 *.d64
 *.prg

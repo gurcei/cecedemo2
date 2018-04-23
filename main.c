@@ -1,11 +1,27 @@
 /*******************************************
- * USING MULTIPLE VOICE: Example 2
- * - BASIC code taken from the Commodore 64 Programmer's reference Guide
- * - Port to c-code by Gurce Isikyildiz 22/04/2018
- * - compile with cc65
+ * CECE'S FIRST DEMO
+ * =================
+ *
+ * PETSCII Art:
+ * -----------
+ * I created the hut.seq petscii art file with the Kaleidoscope V4.0 tool
+ *
+ * I learnt how to read in seq files via this post on lemon64:
+ * - http://www.lemon64.com/forum/viewtopic.php?t=16272&sid=d5f1f7403a682352c2fb1d0fb09bc649
+ *
+ * Polyphonic Music Engine Adapted from:
+ * ------------------------------------
+ *
+ *     USING MULTIPLE VOICE: Example 2
+ *     - BASIC code taken from the Commodore 64 Programmer's reference Guide
+ *     - Port to c-code by Gurce Isikyildiz 22/04/2018
+ *     - I encoded a few additional fields for repeating sections of the melody
+ *     - compile with cc65
+ *
  *******************************************/
 #include <stdio.h>
 #include <conio.h>
+#include <string.h>
 
 #define Poke(A,X)  (*(unsigned char *)(A)) = (X)
 #define Peek(A)    (*(unsigned char *)(A))
@@ -667,6 +683,82 @@ unsigned char c[3][400];
 // L = low-byte of frequency
 // C = control byte of waveform
 
+unsigned char st;   // the returned status value from JSR READST
+unsigned char fname_len, lo, hi;
+
+#pragma optimize(off)
+void check_st(void)
+{
+  // check if our last command was successful
+  __asm__ ( "JSR $FFB7" );                  // call READST
+  __asm__ ( "STA %v", st );                 // store the st value for our c-code
+  printf("st = %d\n", (int)st);
+}
+
+void load_petscii(void)
+{
+  char* file = "hut,s,r";
+
+  // 5 POKE 53280,0:POKE 53281,0
+  Poke(0xd020, 14); // light blue
+  Poke(0xd021, 14); // light blue
+
+  // 10 OPEN 5,8,5,"TETRIS,S,R"
+
+  fname_len = strlen(file);
+  lo = (unsigned char)((int)file & 0xff);
+  hi = ((int)file >> 8) & 0xff;
+
+  __asm__ ( "LDA %v", fname_len);           // A = length of the filename string
+  __asm__ ( "LDX %v", lo );                 // LDX #<file;
+  __asm__ ( "LDY %v", hi );                 // LDY #>file;
+  __asm__ ( "JSR $FFBD" );                  // call SETNAM
+  //check_st();
+  
+  // call SETLFS
+  __asm__ ( "LDA #$03" );                   // set file-number to 5
+  __asm__ ( "LDX #$08" );                   // device-number 8 (disk drive)
+  __asm__ ( "LDY #$03" );                   // secondary address
+  __asm__ ( "JSR $FFBA" );                  // call SETLFS
+  //check_st();
+
+  // call OPEN
+  __asm__ ( "JSR $FFC0" );
+  //check_st();
+ 
+
+  while (1)
+  {
+  // call CHKIN
+  __asm__ ( "LDX #$03" );                   // file-number 5
+  __asm__ ( "JSR $FFC6" );                  // call CHKIN (file 5 now used as input)
+  //check_st();
+
+    // 20 GET #5,T$
+    // call CHRIN
+    __asm__ ( "JSR $FFCF" );                  // the next char is stored in the accumulator
+
+    // 30 PRINT T$;
+    __asm__ ( "JSR $FFD2" );                  // call CHROUT
+    
+    // 40 IF ST<>64 THEN GOTO 20
+    __asm__ ( "JSR $FFB7" );                  // call READST
+    __asm__ ( "STA %v", st );                 // store the st value for our c-code
+
+    if (st == 64)
+      break;
+
+  }
+
+  // 50 CLOSE 5
+  __asm__ ( "LDA #$03" );                     // file-number 5
+  __asm__ ( "JSR $FFC3" );                    // call CLOSE
+
+  __asm__ ( "JSR $FFCC" );                    // call CLRCHN
+}
+#pragma optimize(on)
+
+
 int main(void)
 {
   int t;  // loop variable used for timers
@@ -846,6 +938,8 @@ int main(void)
   // Aha! Now we play what has been rendered by all 3 voices in those activity buffers...
   // Sheesh... This seems like such a wasteful way of doing this, but oh well, let's see how it goes in c then...
 
+  //load_petscii();
+
   // 500 POKE S+5, 0 : POKE S+6, 240 : REM Set Attack/Decay for voice 1 (A=0, D=0) : Set Sustain/Release for voice 1 (S=15, R=0)
   Poke(_SID_+5, 0);   // Set Attack/Decay for voice 1 (A=0, D=0)
   Poke(_SID_+6, 240); // Set Sustain/Release for voice 1 (S=15, R=0)
@@ -866,6 +960,8 @@ int main(void)
   i = 0;
   while (i <= im)
   {
+  __asm__ ( "INC $D020" );
+
     if (i == repeat_to_marker_pos && i != 0)
     {
       if (rptcnt > 0)
