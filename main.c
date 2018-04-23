@@ -938,7 +938,7 @@ int main(void)
   // Aha! Now we play what has been rendered by all 3 voices in those activity buffers...
   // Sheesh... This seems like such a wasteful way of doing this, but oh well, let's see how it goes in c then...
 
-  //load_petscii();
+  load_petscii();
 
   // 500 POKE S+5, 0 : POKE S+6, 240 : REM Set Attack/Decay for voice 1 (A=0, D=0) : Set Sustain/Release for voice 1 (S=15, R=0)
   Poke(_SID_+5, 0);   // Set Attack/Decay for voice 1 (A=0, D=0)
