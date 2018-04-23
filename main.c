@@ -679,12 +679,54 @@ unsigned char h[3][400];
 unsigned char l[3][400];
 unsigned char c[3][400];
 
+char *lyrics[40] =
+{
+  "     tu ngay hai dua yeu nhau mong      ",
+  "          uoc that nhieu...             ",
+  "     tu ngay hai dua yeu nhau long      ",
+  "          uoc bao nhieu...              ",
+  "      mong vang hai dua co chi la       ",
+  "         qua xa xoi: ta mo mot          ",
+  "       mai nha tranh, ta mo mot         ",
+  "      tup leu tinh. doi minh dep        ",
+  "            mai voi anh va              ",
+  "           em. doi minh dep             ",
+  "           mai duoi tup leu             ",
+  "                 xinh...                ",
+  "    roi minh di kiem lieu xanh minh     ",
+  "            ket lam manh.               ",
+  "   roi minh xin khom truc xinh trong    ",
+  "           het chung quanh.             ",
+  "    ngoai vuon hoa cuc, hoa mai nao     ",
+  "      khac chi tranh: ban mai minh      ",
+  "      ngam mau hoa, dem dem minh        ",
+  "     ngam chi hang. du ngheo cuoc       ",
+  "           song van them hao            ",
+  "           hao. doi minh dep            ",
+  "            qua co ai bang              ",
+  "                 ta...                  ",
+  "              tup leu ly                ",
+  "         tuong cua anh va cua           ",
+  "         em, dau dau nao anh            ",
+  "           oi? tup leu ly               ",
+  "         tuong cua em va cua            ",
+  "         anh, dau dau nao em            ",
+  "           oi? tup leu ly               ",
+  "         tuong do ta xay bang           ",
+  "     duyen bang tinh, khong ai ma       ",
+  "      yeu bang minh, khi ta dung        ",
+  "          nhin mot dan con              ",
+  "               xinh...                  ",
+  NULL
+};
+
 // H = high-byte of frequency
 // L = low-byte of frequency
 // C = control byte of waveform
 
 unsigned char st;   // the returned status value from JSR READST
 unsigned char fname_len, lo, hi;
+int lyric_idx = 0;
 
 #pragma optimize(off)
 void check_st(void)
@@ -695,6 +737,33 @@ void check_st(void)
   printf("st = %d\n", (int)st);
 }
 
+void intro_screen(void)
+{
+  // clear the screen
+  __asm__ ( "JSR $E544" );
+  __asm__ ( "LDA #$00" );
+  __asm__ ( "STA $D020" );
+  __asm__ ( "STA $D021" );
+
+  __asm__ ( "LDA #159" ); // yellow colour for text
+  __asm__ ( "JSR $FFD2" );                  // call CHROUT
+
+  printf("\n\n\n\n");
+  printf("      cece's first demo (23/04/2018)\n");
+  printf("      =================\n\n\n");
+
+  __asm__ ( "LDA #158" ); // yellow colour for text
+  __asm__ ( "JSR $FFD2" );                  // call CHROUT
+
+  printf("  aka. 'vietnamese karaoke machine'!!\n");
+  printf("\n\n");
+
+  printf("  tup leu ly luong - by hoang thi tho\n\n\n");
+  printf("         dedicated to my camcam ;)\n\n\n");
+  printf("         press any key to begin");
+  cgetc();
+}
+
 void load_petscii(void)
 {
   char* file = "hut,s,r";
@@ -702,6 +771,9 @@ void load_petscii(void)
   // 5 POKE 53280,0:POKE 53281,0
   Poke(0xd020, 14); // light blue
   Poke(0xd021, 14); // light blue
+
+  // clear the screen
+  __asm__ ( "JSR $E544" );
 
   // 10 OPEN 5,8,5,"TETRIS,S,R"
 
@@ -938,6 +1010,7 @@ int main(void)
   // Aha! Now we play what has been rendered by all 3 voices in those activity buffers...
   // Sheesh... This seems like such a wasteful way of doing this, but oh well, let's see how it goes in c then...
 
+  intro_screen();
   load_petscii();
 
   // 500 POKE S+5, 0 : POKE S+6, 240 : REM Set Attack/Decay for voice 1 (A=0, D=0) : Set Sustain/Release for voice 1 (S=15, R=0)
@@ -960,7 +1033,7 @@ int main(void)
   i = 0;
   while (i <= im)
   {
-  __asm__ ( "INC $D020" );
+    //__asm__ ( "INC $D020" );
 
     if (i == repeat_to_marker_pos && i != 0)
     {
@@ -977,6 +1050,28 @@ int main(void)
       i = 0;
       rptcnt = repeat_to_marker_count;
       continue;
+    }
+
+    if ( ( i % 16 ) == 0)
+    {
+      // show the next lyric
+      
+      // home the cursor
+      __asm__ ( "JSR $E566" );
+
+      __asm__ ( "LDA #144" ); // black colour for text
+      __asm__ ( "JSR $FFD2" );                  // call CHROUT
+
+      for (k = 0; k<39; k++)
+      {
+        lo = lyrics[lyric_idx][k];
+        __asm__ ( "LDA %v", lo);
+        __asm__ ( "JSR $FFD2" );                  // call CHROUT
+      }
+      lyric_idx++;
+
+      if (lyrics[lyric_idx] == 0)
+        lyric_idx = 0;
     }
 
     //printf("fr=%u\n", l[0][i] + 256*h[0][i]);
