@@ -509,20 +509,25 @@ void load_petscii(void)
 
 int girlx = 100;
 int girly = 195;
+int frame = 1;
 
 void load_sprites(void)
 {
-  Poke(2040, 192); // pick sprite0 index
-  Poke(2041, 193); // pick sprite1 index
-  Poke(2042, 194); // pick sprite2 index
+  Poke(2040, 192+frame*3); // pick sprite0 index
+  Poke(2041, 193+frame*3); // pick sprite1 index
+  Poke(2042, 194+frame*3); // pick sprite2 index
   Poke(53269, 1+2+4);  // turn on sprite0+1+2
-  Poke(0xd000, girlx); // sprite0-x
+  Poke(0xd000, girlx & 0xff); // sprite0-x
   Poke(0xd001, girly); // sprite0-y
-  Poke(0xd002, girlx); // sprite1-x
+  Poke(0xd002, girlx & 0xff); // sprite1-x
   Poke(0xd003, girly); // sprite1-y
-  Poke(0xd004, girlx); // sprite2-x
+  Poke(0xd004, girlx & 0xff); // sprite2-x
   Poke(0xd005, girly); // sprite2-y
-  Poke(53264, 0);   // spritex-msb
+  if (girlx > 0xff)
+    Poke(53264, 255);
+  else
+    Poke(53264, 0);   // spritex-msb
+
   Poke(0xD027, 0);  // Sprite0 color
   Poke(0xD028, 10);  // Sprite1 color
   Poke(0xD029, 3);  // Sprite2 color
@@ -752,7 +757,6 @@ int main(void)
 
   intro_screen();
   load_petscii();
-  load_sprites();
 
   // 500 POKE S+5, 0 : POKE S+6, 240 : REM Set Attack/Decay for voice 1 (A=0, D=0) : Set Sustain/Release for voice 1 (S=15, R=0)
   Poke(_SID_+5, 0);   // (0xd405) Set Attack/Decay for voice 1 (A=0, D=0)
@@ -829,6 +833,12 @@ int main(void)
         lyric_idx = 0;
     }
 
+    load_sprites();
+    girlx += 2;
+    if (girlx > 330) girlx = 0;
+    if (i % 2 == 0)
+      frame = (frame+1) % 2;
+  
     //printf("fr=%u\n", l[0][i] + 256*h[0][i]);
     // 550 POKE S,   L(0, I) : POKE S+7,  L(1, I) : POKE S+14, L(2, I) : REM POKE low frequency from activity array for all voices.
     Poke(_SID_,    l[0][i]);  // (0xd400) v1 freq lo-byte
