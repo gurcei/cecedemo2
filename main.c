@@ -510,12 +510,13 @@ void load_petscii(void)
 int girlx = 100;
 int girly = 195;
 int frame = 1;
+int dir=0;
 
 void load_sprites(void)
 {
-  Poke(2040, 192+frame*3); // pick sprite0 index
-  Poke(2041, 193+frame*3); // pick sprite1 index
-  Poke(2042, 194+frame*3); // pick sprite2 index
+  Poke(2040, 192+frame*3+dir*6); // pick sprite0 index
+  Poke(2041, 193+frame*3+dir*6); // pick sprite1 index
+  Poke(2042, 194+frame*3+dir*6); // pick sprite2 index
   Poke(53269, 1+2+4);  // turn on sprite0+1+2
   Poke(0xd000, girlx & 0xff); // sprite0-x
   Poke(0xd001, girly); // sprite0-y
@@ -572,6 +573,38 @@ void load_sprites(void)
   // 53262 (0xD00E) Sprite7 X Position
   // 53263 (0xD00F) Sprite7 Y Position
   // 53264 (0xD010) SPRITE X MSB Register
+}
+
+int inverted(int val)
+{
+  return (val & 1 ? 128 : 0)
+    + (val & 2 ? 64 : 0)
+    + (val & 4 ? 32 : 0)
+    + (val & 8 ? 16 : 0)
+    + (val & 16 ? 8 : 0)
+    + (val & 32 ? 4 : 0)
+    + (val & 64 ? 2 : 0)
+    + (val & 128 ? 1 : 0);
+}
+
+void invert_sprites(void)
+{
+  int idx = 192;
+  int src, dst;
+
+  for (idx = 192; idx < 198; idx++)
+  {
+    int nidx = idx+6;
+    int y;
+    for (y = 0; y < 21; y++)
+    {
+      src = 64*idx+y*3;
+      dst = 64*nidx+y*3;
+      Poke(dst, inverted(Peek(src+2)));
+      Poke(dst+1, inverted(Peek(src+1)));
+      Poke(dst+2, inverted(Peek(src)));
+    }
+  }
 }
 
 int main(void)
@@ -757,6 +790,7 @@ int main(void)
 
   intro_screen();
   load_petscii();
+  invert_sprites();
 
   // 500 POKE S+5, 0 : POKE S+6, 240 : REM Set Attack/Decay for voice 1 (A=0, D=0) : Set Sustain/Release for voice 1 (S=15, R=0)
   Poke(_SID_+5, 0);   // (0xd405) Set Attack/Decay for voice 1 (A=0, D=0)
@@ -834,8 +868,16 @@ int main(void)
     }
 
     load_sprites();
-    girlx += 2;
-    if (girlx > 330) girlx = 0;
+    if (dir == 0)
+    {
+      girlx += 2;
+      if (girlx > 310) dir = 1;
+    }
+    else // dir == 1
+    {
+      girlx -= 2;
+      if (girlx < 25) dir = 0;
+    }
     if (i % 2 == 0)
       frame = (frame+1) % 2;
   
