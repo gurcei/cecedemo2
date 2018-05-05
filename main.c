@@ -432,10 +432,10 @@ void intro_screen(void)
   __asm__ ( "LDA #158" ); // yellow colour for text
   __asm__ ( "JSR $FFD2" );                  // call CHROUT
 
-  printf("  aka. 'turkish karaoke machine'!!\n");
+  printf("    aka. 'turkish karaoke machine'!!\n");
   printf("\n\n");
 
-  printf("  tini mini hanim - by unknown\n\n\n");
+  printf("      tini mini hanim - by unknown\n\n\n");
   printf("         dedicated to my mum ;)\n\n\n");
   printf("         press any key to begin");
   cgetc();
@@ -507,6 +507,67 @@ void load_petscii(void)
 }
 #pragma optimize(on)
 
+int girlx = 100;
+int girly = 195;
+
+void load_sprites(void)
+{
+  Poke(2040, 192); // pick sprite0 index
+  Poke(2041, 193); // pick sprite1 index
+  Poke(2042, 194); // pick sprite2 index
+  Poke(53269, 1+2+4);  // turn on sprite0+1+2
+  Poke(0xd000, girlx); // sprite0-x
+  Poke(0xd001, girly); // sprite0-y
+  Poke(0xd002, girlx); // sprite1-x
+  Poke(0xd003, girly); // sprite1-y
+  Poke(0xd004, girlx); // sprite2-x
+  Poke(0xd005, girly); // sprite2-y
+  Poke(53264, 0);   // spritex-msb
+  Poke(0xD027, 0);  // Sprite0 color
+  Poke(0xD028, 10);  // Sprite1 color
+  Poke(0xD029, 3);  // Sprite2 color
+
+  // SPRITES ARE 24 PIXELS BY 21 PIXELS
+  // LOCATION = (BANK * 16384) + (SPRITE POINTER VALUE * 64)
+  // ---------
+  // 2040 (0x07F8) Sprite0 pointer
+  // 2041 (0x07F9) Sprite1 pointer
+  // 2042 (0x07FA) Sprite2 pointer
+  // 2043 (0x07FB) Sprite3 pointer
+  // 2044 (0x07FC) Sprite4 pointer
+  // 2045 (0x07FD) Sprite5 pointer
+  // 2046 (0x07FE) Sprite6 pointer
+  // 2047 (0x07FF) Sprite7 pointer
+  // ---------
+  // 53269 (0xD015) SPRITE ENABLE register
+  // ---------
+  // 53287 (0xD027) Sprite0 color
+  // 53288 (0xD028) Sprite1 color
+  // 53289 (0xD029) Sprite2 color
+  // 53290 (0xD02A) Sprite3 color
+  // 53291 (0xD02B) Sprite4 color
+  // 53292 (0xD02C) Sprite5 color
+  // 53293 (0xD02D) Sprite6 color
+  // 53294 (0xD02E) Sprite7 color
+  // ---------
+  // 53248 (0xD000) Sprite0 X Position
+  // 53249 (0xD001) Sprite0 Y Position
+  // 53250 (0xD002) Sprite1 X Position
+  // 53251 (0xD003) Sprite1 Y Position
+  // 53252 (0xD004) Sprite2 X Position
+  // 53253 (0xD005) Sprite2 Y Position
+  // 53254 (0xD006) Sprite3 X Position
+  // 53255 (0xD007) Sprite3 Y Position
+  // 53256 (0xD008) Sprite4 X Position
+  // 53257 (0xD009) Sprite4 Y Position
+  // 53258 (0xD00A) Sprite5 X Position
+  // 53259 (0xD00B) Sprite5 Y Position
+  // 53260 (0xD00C) Sprite6 X Position
+  // 53261 (0xD00D) Sprite6 Y Position
+  // 53262 (0xD00E) Sprite7 X Position
+  // 53263 (0xD00F) Sprite7 Y Position
+  // 53264 (0xD010) SPRITE X MSB Register
+}
 
 int main(void)
 {
@@ -691,6 +752,7 @@ int main(void)
 
   intro_screen();
   load_petscii();
+  load_sprites();
 
   // 500 POKE S+5, 0 : POKE S+6, 240 : REM Set Attack/Decay for voice 1 (A=0, D=0) : Set Sustain/Release for voice 1 (S=15, R=0)
   Poke(_SID_+5, 0);   // (0xd405) Set Attack/Decay for voice 1 (A=0, D=0)

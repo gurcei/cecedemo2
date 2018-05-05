@@ -11,8 +11,8 @@ run:
 main.s:	main.c gidemo.cfg
 	$(CC65) $(COPTS) --add-source -o $@ $<
 
-gidemo.prg: main.s
-	$(CL65) $(COPTS) $(LOPTS) -vm -l gidemo.list -m gidemo.map -o gidemo.prg main.s
+gidemo.prg: main.s sprites.s
+	$(CL65) $(COPTS) $(LOPTS) -vm -l gidemo.list -m gidemo.map -o gidemo.prg main.s sprites.s
 
 gidemo.d64: gidemo.prg
 	rm -f gidemo.d64
