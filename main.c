@@ -1,10 +1,19 @@
 /*******************************************
- * CECE'S FIRST DEMO
- * =================
+ * CECE'S SECOND DEMO
+ * ==================
+ *
+ * 05/05/2018
+ * ----------
+ * Based on CECE'S FIRST DEMO
+ *
+ * Music Engine refined to use 1/32th notes, so that I could add cute trills into the melody.
+ * I also added more comments into the code to figure out bit-fields of the SID-chip registers
+ * that get set in this example. This helped me to figure out how to change voice3 to be my
+ * drum channel.
  *
  * PETSCII Art:
  * -----------
- * I created the hut.seq petscii art file with the Kaleidoscope V4.0 tool
+ * I created the tini.seq petscii art file with the Kaleidoscope V4.0 tool
  *
  * I learnt how to read in seq files via this post on lemon64:
  * - http://www.lemon64.com/forum/viewtopic.php?t=16272&sid=d5f1f7403a682352c2fb1d0fb09bc649
@@ -434,7 +443,7 @@ void intro_screen(void)
 
 void load_petscii(void)
 {
-  char* file = "xxx,s,r";
+  char* file = "tini,s,r";
 
   // 5 POKE 53280,0:POKE 53281,0
   Poke(0xd020, 14); // light blue
@@ -442,8 +451,6 @@ void load_petscii(void)
 
   // clear the screen
   __asm__ ( "JSR $E544" );
-
-  return;
 
   // 10 OPEN 5,8,5,"TETRIS,S,R"
 

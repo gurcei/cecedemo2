@@ -16,7 +16,7 @@ gidemo.prg: main.s
 
 gidemo.d64: gidemo.prg
 	rm -f gidemo.d64
-	cbmconvert -v2 -D4o gidemo.d64 gidemo.prg hut.seq
+	cbmconvert -v2 -D4o gidemo.d64 gidemo.prg tini.seq
 
 clean:
 	rm -f gidemo.map
