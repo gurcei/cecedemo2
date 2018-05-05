@@ -30,29 +30,31 @@
 
 #define _SID_ 0xD400U
 
-// Encoding = 0brm dddd dooo nnnn  (where d=duration, o=octave, n=note)
+// Encoding = 0rxd dddd dooo nnnn  (where d=duration, o=octave, n=note)
+//
+// I've added an extra bit so that I can have 1/32 notes too
 //
 // My extra fields are:
-// - m = marker for the place to repeat back to (use nnnn as a counter of how many times to repeat)
+// - x = special token, it will override the purpose of the bit-fields in order to accomodate more commands
 // - r = repeat back to marker
-// - b = repeat back to beginning (wipe out any prior repeat counters)
 
-#define MARKER 4096U
-#define REPEAT_BACK_TO_MARKER 8192U
+//#define MARKER 4096U
+//#define REPEAT_BACK_TO_MARKER 8192U
 #define REPEAT_TO_BEGINNING 16384U
 
 // durations
-#define D1_16 128
-#define D1_8  256
-#define D1_8D 384
-#define D1_4  512
-#define D1_4_1_16 640
-#define D1_4D 768
-#define D1_2  1024
-#define D1_2_1_16 1152
-#define D1_2_1_8  1280
-#define D1_2D     1536
-#define D1        2048
+#define D1_32 128
+#define D1_16 256
+#define D1_8  512
+#define D1_8D 768
+#define D1_4  1024
+#define D1_4_1_16 1280
+#define D1_4D 1536
+#define D1_2  2048
+#define D1_2_1_16 2304
+#define D1_2_1_8  2560
+#define D1_2D     3072
+#define D1        4096
 
 // notes in scale
 #define NC  0
@@ -91,564 +93,219 @@ void init_sid(void)
 #define VERSE
 #define CHORUS
 
+#define CHORUS_V1 \
+  //BAR1          : Tin Tin, Tini mini hanim \
+  NE + O5 + D1_4,                            \
+  NE + O5 + D1_4,                            \
+  NE + O5 + D1_16,                           \
+  NG + O5 + D1_16,                           \
+  NF + O5 + D1_16,                           \
+  NG + O5 + D1_16,                           \
+  NF + O5 + D1_8,                            \
+  NE + O5 + D1_8,                            \
+                                             \
+  //BAR2          : Tin Tin, Tini mini hanim \
+  NE + O5 + D1_4,                            \
+  NE + O5 + D1_4,                            \
+  NE + O5 + D1_16,                           \
+  NG + O5 + D1_16,                           \
+  NF + O5 + D1_16,                           \
+  NG + O5 + D1_16,                           \
+  NF + O5 + D1_8,                            \
+  NE + O5 + D1_8,                            \
+                                             \
+  //BAR3          : Seni seviyor canim       \
+  NF + O5 + D1_8,                            \
+  NF + O5 + D1_8,                            \
+  NE + O5 + D1_4,                            \
+  ND + O5 + D1_8,                            \
+  ND + O5 + D1_8,                            \
+  NC + O5 + D1_8,                            \
+  NC + O5 + D1_8,                            \
+                                             \
+  //BAR4          : Seni seviyor canim       \
+  NF + O5 + D1_8,                            \
+  NF + O5 + D1_8,                            \
+  NE + O5 + D1_4,                            \
+  ND + O5 + D1_8,                            \
+  ND + O5 + D1_8,                            \
+  NC + O5 + D1_8,                            \
+  NC + O5 + D1_8,                            
+
+#define VERSE_V1 \
+  // BAR1 \
+  NE + O5 + D1_8, \
+  NE + O5 + D1_8, \
+  NE + O5 + D1_4, \
+  NE + O5 + D1_8, \
+  NG + O5 + D1_8, \
+  NF + O5 + D1_32, \
+  NG + O5 + D1_32, \
+  NF + O5 + D1_32, \
+  NG + O5 + D1_32, \
+  NE + O5 + D1_8, \
+   \
+  // BAR2 \
+  NE + O5 + D1_8, \
+  NE + O5 + D1_8, \
+  NE + O5 + D1_4, \
+  NE + O5 + D1_8, \
+  NG + O5 + D1_8, \
+  NF + O5 + D1_32, \
+  NG + O5 + D1_32, \
+  NF + O5 + D1_32, \
+  NG + O5 + D1_32, \
+  NE + O5 + D1_8, \
+ \
+  // BAR3 \
+  NF + O5 + D1_16, \
+  NE + O5 + D1_16, \
+  NF + O5 + D1_16, \
+  NG + O5 + D1_16, \
+  NE + O5 + D1_8, \
+  NE + O5 + D1_8, \
+  ND + O5 + D1_16, \
+  NC + O5 + D1_16, \
+  ND + O5 + D1_16, \
+  NE + O5 + D1_16, \
+  NC + O5 + D1_8, \
+  NC + O5 + D1_8, \
+   \
+  // BAR4 \
+  NF + O5 + D1_16, \
+  NE + O5 + D1_16, \
+  NF + O5 + D1_16, \
+  NG + O5 + D1_16, \
+  NE + O5 + D1_8, \
+  NE + O5 + D1_8, \
+  ND + O5 + D1_16, \
+  NC + O5 + D1_16, \
+  ND + O5 + D1_16, \
+  NE + O5 + D1_16, \
+  NC + O5 + D1_8, \
+  NC + O5 + D1_8,
+
 
 // voice 1
 int v1[] =
 {
-#ifdef VERSE
-  MARKER,       // place a marker for the REPEAT_BACK_TO_MARKER token to jump back to
+  CHORUS_V1
+  CHORUS_V1
+  VERSE_V1
+  VERSE_V1
 
-  //BAR1          : Tu ngay hai dua yeu nhau mong
-  -D1_8,
-  NE + O5 + D1_8,
-  NE + O5 + D1_8,
-  NG + O5 + D1_8,
-  NB + O5 + D1_8,
-  NA + O5 + D1_8,
-  NG + O5 + D1_8,
-  NB + O4 + D1_8,
-  //BAR2          : uoc that nhieu
-  NB + O5 + D1_4,
-  NE + O5 + D1_8,
-  NE + O5 + D1_4,
-  -D1_4D,
+  0
+};
 
-  //BAR3          : tu ngay hai dua yeu nhau long
-  -D1_8,
-  NE + O5 + D1_8,
-  NE + O5 + D1_8,
-  NG + O5 + D1_8,
-  NB + O5 + D1_8,
-  NA + O5 + D1_8,
-  NG + O5 + D1_8,
-  NB + O4 + D1_8,
-  //BAR4          : uoc bao nhieu
-  NB + O5 + D1_4,
-  NA + O5 + D1_8,
-  NA + O5 + D1_4,
-  -D1_4D,
+#define CHORUS_V2 \
+  // BAR1 \
+  NC + O3 + D1_8D, \
+  NG + O3 + D1_16, \
+  NE + O3 + D1_8, \
+  NG + O3 + D1_8, \
+  NC + O3 + D1_8D, \
+  NG + O3 + D1_16, \
+  NE + O3 + D1_8, \
+  NG + O3 + D1_8, \
+ \
+  // BAR2 \
+  NC + O3 + D1_8D, \
+  NG + O3 + D1_16, \
+  NE + O3 + D1_8, \
+  NG + O3 + D1_8, \
+  NC + O3 + D1_8D, \
+  NG + O3 + D1_16, \
+  NE + O3 + D1_8, \
+  NG + O3 + D1_8, \
+ \
+  // BAR3 \
+  NF + O3 + D1_8D, \
+  NF + O3 + D1_16, \
+  NE + O3 + D1_8, \
+  NE + O3 + D1_8, \
+  ND + O3 + D1_8D, \
+  ND + O3 + D1_16, \
+  NC + O3 + D1_8, \
+  NC + O3 + D1_8, \
+ \
+  // BAR4 \
+  NF + O3 + D1_8D, \
+  NF + O3 + D1_16, \
+  NE + O3 + D1_8, \
+  NE + O3 + D1_8, \
+  ND + O3 + D1_8D, \
+  ND + O3 + D1_16, \
+  NC + O3 + D1_8, \
+  NC + O3 + D1_8, \
 
-  //BAR5          : Mong vang hai dua co chi la
-  -D1_8,
-  NA + O5 + D1_8,
-  NA + O5 + D1_8,
-  NB + O5 + D1_8,
-  NC + O6 + D1_8,
-  NB + O5 + D1_8,
-  NA + O5 + D1_8,
-  NE + O5 + D1_8,
-  //BAR6          : qua xa xoi ta mo mot
-  NE + O6 + D1_4,
-  NB + O5 + D1_8,
-  NB + O5 + D1_8,
-  -D1_8,
-  NB + O5 + D1_8,
-  NB + O5 + D1_8,
-  NG + O5 + D1_8,
 
-  //BAR7          : mai nha tranh, ta mo mot
-  NB + O5 + D1_4,
-  NG + O5 + D1_8,
-  NA + O5 + D1_8,
-  -D1_8,
-  NA + O5 + D1_8,
-  NA + O5 + D1_8,
-  NG + O5 + D1_8,
-
-  //BAR8          : tup leu tinh. Doi minh dep
-  NB + O5 + D1_4,
-  NE + O5 + D1_8,
-  NE + O5 + D1_8,
-  -D1_8,
-  NE + O5 + D1_8,
-  NE + O5 + D1_8,
-  NE + O5 + D1_8,
-
-  //BAR9          : mai voi anh va
-  NB + O5 + D1_8,
-  -D1_8,
-  NB  + O5 + D1_4,
-  NFs + O5 + D1_8,
-  NA  + O5 + D1_8,
-  NFs + O5 + D1_8,
-  ND  + O5 + D1_8,
-  //BAR10         : em doi minh dep
-  NE  + O5 + D1_4,
-  -D1_4D,
-  NE + O5 + D1_8,
-  NE + O5 + D1_8,
-  NE + O5 + D1_8,
-  //BAR11         : mai duoi tup leu
-  NB + O5 + D1_8,
-  -D1_8,
-  NB + O5 + D1_4,
-  NFs + O5 + D1_8,
-  NA  + O5 + D1_8,
-  NFs + O5 + D1_8,
-  ND  + O5 + D1_8,
-  //BAR12         : xinh
-  NE + O5 +D1,
-#endif // VERSE
-
-  REPEAT_BACK_TO_MARKER + 1,  // repeat back to marker once
-
-  // CHORUS
-  // BAR1         : tup leu ly
-  -D1_4,
-  NE + O6 + D1_4,
-  NB + O5 + D1_4,
-  ND + O6 + D1_4,
-
-  // BAR2         : tuong cua anh va cua em
-  NE + O5 + D1_4,
-  NE + O5 + D1_8,
-  NB + O5 + D1_4,
-  NB + O4 + D1_8,
-  NB + O4 + D1_8,
-  ND + O5 + D1_8,
-
-  // BAR3         : em, dau dau nao anh oi
-  NE + O5 + D1_4D,
-  NE + O7 + D1_4,
-  NE + O7 + D1_8,
-  ND + O7 + D1_8,
-  NE + O7 + D1_8,
-
-  // BAR4         : oi tup leu ly
-  NE + O7 + D1_8,
-  -D1_8,
-  NE + O6 + D1_4,
-  NB + O5 + D1_4,
-  ND + O6 + D1_4,
-
-  // BAR5         : tuong cua em va cua
-  NE + O5 + D1_4,
-  NE + O5 + D1_8,
-  NB + O5 + D1_4,
-  NE + O5 + D1_8,
-  NE + O5 + D1_8,
-  NG + O5 + D1_8,
-
-  // BAR6         : anh, dau dau nao em
-  NA + O5 + D1_4D,
-  NA + O7 + D1_4,
-  NA + O7 + D1_8,
-  NG + O7 + D1_8,
-  NA + O7 + D1_8,
- 
-  // BAR7         : oh tup leu ly
-  NA + O7 + D1_8,
-  -D1_8,
-  NE + O6 + D1_4,
-  NB + O5 + D1_4,
-  ND + O6 + D1_4,
-
-  // BAR8         : tuong do ta xay bang
-  NE + O5 + D1_4,
-  -D1_8,
-  NE + O6 + D1_4,
-  ND + O6 + D1_8,
-  ND + O6 + D1_8,
-  NB + O5 + D1_8,
-
-  // BAR9         : duyen bang tinh khong ai ma
-  ND + O6 + D1_4,
-  NA + O5 + D1_8,
-  NA + O5 + D1_8,
-  -D1_8,
-  NB + O5 + D1_8,
-  NB + O5 + D1_8,
-  NG + O5 + D1_8,
-
-  // BAR10        : yeu bang minh khi ta dung
-  NA + O5 + D1_4,
-  NE + O5 + D1_8,
-  NE + O5 + D1_8,
-  -D1_8,
-  NFs + O5 + D1_8,
-  NFs + O5 + D1_8,
-  NA + O5 + D1_8,
-
-  // BAR11        : nhin mot dan con
-  NB + O4 + D1_8,
-  -D1_4,
-  NB + O4 + D1_8,
-  ND + O5 + D1_4,
-  NE + O5 + D1_4,
-
-  // BAR12        : xinh
-  NE + O5 + D1,
+// voice 2
+int v2[] =
+{
+  CHORUS_V2
+  CHORUS_V2
+  CHORUS_V2  // recycle for the verse too
+  CHORUS_V2  // recycle for the verse too
 
   REPEAT_TO_BEGINNING,
 
   0
 };
 
-// voice 2
-int v2[] =
+#define DRUM_PAT1 \
+  NC + O2 + D1_8, \
+  NC + O4 + D1_16, \
+  NC + O4 + D1_16, \
+  NC + O2 + D1_8, \
+  NC + O4 + D1_8, 
 
-{
-#ifdef VERSE
-  // BAR1
-  NE + O1 + D1_4,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_4,
-  // BAR2
-  NE + O1 + D1_4,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_4,
-  // BAR3
-  NE + O1 + D1_4,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_4,
-  // BAR4
-  NA + O1 + D1_4,
-  -D1_8,
-  NA + O1 + D1_8,
-  -D1_8,
-  NA + O1 + D1_8,
-  -D1_4,
-  // BAR5
-  NA + O1 + D1_4,
-  -D1_8,
-  NA + O1 + D1_8,
-  -D1_8,
-  NA + O1 + D1_8,
-  -D1_4,
-  // BAR6
-  NB + O0 + D1_4,
-  -D1_8,
-  NB + O0 + D1_8,
-  -D1_8,
-  NB + O0 + D1_8,
-  -D1_4,
-  // BAR7
-  NG + O1 + D1_4,
-  -D1_8,
-  NG + O1 + D1_8,
-  -D1_8,
-  NG + O1 + D1_8,
-  -D1_4,
-  // BAR8
-  ND + O1 + D1_4,
-  -D1_8,
-  ND + O1 + D1_8,
-  -D1_8,
-  ND + O1 + D1_8,
-  -D1_4,
-  // BAR9
-  NC + O1 + D1_4,
-  -D1_8,
-  NC + O1 + D1_8,
-  ND + O1 + D1_4,
-  ND + O1 + D1_4,
-  // BAR10
-  NE + O1 + D1_4,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_4,
-  // BAR11
-  NC + O1 + D1_4,
-  -D1_8,
-  NC + O1 + D1_8,
-  ND + O1 + D1_4,
-  ND + O1 + D1_4,
-  // BAR12
-  NE + O1 + D1_4,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_4,
-#endif // VERSE
+#define DRUM_PAT2 \
+  NC + O2 + D1_16, \
+  NC + O4 + D1_8, \
+  NC + O4 + D1_16, \
+  NC + O2 + D1_8, \
+  NC + O4 + D1_8, 
 
-  // CHORUS
-  // BAR1
-  NE + O1 + D1_4,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_4,
+#define DRUM_PAT3 \
+  NC + O4 + D1_16, \
+  NC + O4 + D1_16, \
+  NC + O4 + D1_16, \
+  NC + O4 + D1_16, \
+  NC + O3 + D1_16, \
+  NC + O3 + D1_16, \
+  NC + O3 + D1_16, \
+  NC + O3 + D1_16, \
 
-  // BAR2
-  NE + O1 + D1_4,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_4,
+#define DRUM_PAT1x2 \
+  DRUM_PAT1 \
+  DRUM_PAT1
 
-  // BAR3
-  NE + O1 + D1_4,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_4,
+#define DRUM_PAT1n2 \
+  DRUM_PAT1 \
+  DRUM_PAT2
 
-  // BAR4
-  NE + O1 + D1_4,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_4,
+#define DRUM_PAT3n2 \
+  DRUM_PAT3 \
+  DRUM_PAT2
 
-  // BAR5
-  NE + O1 + D1_4,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_4,
-
-  // BAR6
-  NA + O1 + D1_4,
-  -D1_8,
-  NA + O1 + D1_8,
-  -D1_8,
-  NA + O1 + D1_8,
-  -D1_4,
-
-  // BAR7
-  NA + O1 + D1_4,
-  -D1_8,
-  NA + O1 + D1_8,
-  -D1_8,
-  NA + O1 + D1_8,
-  -D1_4,
-
-  // BAR8
-  NB + O0 + D1_4,
-  -D1_8,
-  NB + O0 + D1_8,
-  -D1_8,
-  NB + O0 + D1_8,
-  -D1_4,
-
-  // BAR9
-  NG + O1 + D1_4,
-  -D1_8,
-  NG + O1 + D1_8,
-  -D1_8,
-  NG + O1 + D1_8,
-  -D1_4,
-  // BAR10
-  ND + O1 + D1_4,
-  -D1_8,
-  ND + O1 + D1_8,
-  -D1_8,
-  ND + O1 + D1_8,
-  -D1_4,
-  // BAR11
-  NC + O1 + D1_4,
-  -D1_8,
-  NC + O1 + D1_8,
-  ND + O1 + D1_4,
-  ND + O1 + D1_4,
-  // BAR12
-  NE + O1 + D1_4,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_8,
-  NE + O1 + D1_8,
-  -D1_4,
-
-  0
-};
+#define DRUM_PAT1x4 \
+  DRUM_PAT1x2 \
+  DRUM_PAT1n2
 
 // voice 3
 int v3[] =
 {
-#ifdef VERSE
-  // BAR1
-  NE + O2 + D1_4,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_4,
-  // BAR2
-  NE + O2 + D1_4,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_4,
-  // BAR3
-  NE + O2 + D1_4,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_4,
-  // BAR4
-  NA + O2 + D1_4,
-  -D1_8,
-  NA + O2 + D1_8,
-  -D1_8,
-  NA + O2 + D1_8,
-  -D1_4,
-  // BAR5
-  NA + O2 + D1_4,
-  -D1_8,
-  NA + O2 + D1_8,
-  -D1_8,
-  NA + O2 + D1_8,
-  -D1_4,
-  // BAR6
-  NB + O1 + D1_4,
-  -D1_8,
-  NB + O1 + D1_8,
-  -D1_8,
-  NB + O1 + D1_8,
-  -D1_4,
-  // BAR7
-  NG + O2 + D1_4,
-  -D1_8,
-  NG + O2 + D1_8,
-  -D1_8,
-  NG + O2 + D1_8,
-  -D1_4,
-  // BAR8
-  ND + O2 + D1_4,
-  -D1_8,
-  ND + O2 + D1_8,
-  -D1_8,
-  ND + O2 + D1_8,
-  -D1_4,
-  // BAR9
-  NC + O2 + D1_4,
-  -D1_8,
-  NC + O2 + D1_8,
-  ND + O2 + D1_4,
-  ND + O2 + D1_4,
-  // BAR10
-  NE + O2 + D1_4,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_4,
-  // BAR11
-  NC + O2 + D1_4,
-  -D1_8,
-  NC + O2 + D1_8,
-  ND + O2 + D1_4,
-  ND + O2 + D1_4,
-  // BAR12
-  NE + O2 + D1_4,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_4,
-#endif // VERSE
+  DRUM_PAT1x4
+  DRUM_PAT1x4
+  DRUM_PAT1x4
+  DRUM_PAT3n2
+  DRUM_PAT3n2
 
-  // CHORUS
-  // BAR1
-  NE + O2 + D1_4,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_4,
-
-  // BAR2
-  NE + O2 + D1_4,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_4,
-
-  // BAR3
-  NE + O2 + D1_4,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_4,
-
-  // BAR4
-  NE + O2 + D1_4,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_4,
-
-  // BAR5
-  NE + O2 + D1_4,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_4,
-
-  // BAR6
-  NA + O2 + D1_4,
-  -D1_8,
-  NA + O2 + D1_8,
-  -D1_8,
-  NA + O2 + D1_8,
-  -D1_4,
-
-  // BAR7
-  NA + O2 + D1_4,
-  -D1_8,
-  NA + O2 + D1_8,
-  -D1_8,
-  NA + O2 + D1_8,
-  -D1_4,
-
-  // BAR8
-  NB + O1 + D1_4,
-  -D1_8,
-  NB + O1 + D1_8,
-  -D1_8,
-  NB + O1 + D1_8,
-  -D1_4,
-
-  // BAR9
-  NG + O2 + D1_4,
-  -D1_8,
-  NG + O2 + D1_8,
-  -D1_8,
-  NG + O2 + D1_8,
-  -D1_4,
-  // BAR10
-  ND + O2 + D1_4,
-  -D1_8,
-  ND + O2 + D1_8,
-  -D1_8,
-  ND + O2 + D1_8,
-  -D1_4,
-  // BAR11
-  NC + O2 + D1_4,
-  -D1_8,
-  NC + O2 + D1_8,
-  ND + O2 + D1_4,
-  ND + O2 + D1_4,
-  // BAR12
-  NE + O2 + D1_4,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_8,
-  NE + O2 + D1_8,
-  -D1_4,
+  DRUM_PAT1x4
+  DRUM_PAT1x4
+  DRUM_PAT1x4
+  DRUM_PAT3n2
+  DRUM_PAT3n2
 
   0
 };
@@ -671,52 +328,63 @@ unsigned int fq[12] =
 // Cs7 : 36376U = 0x8E18 = HI = 0x8E = 142 : LO = 0x18 = 24
 
 // 40 V(0) = 17: V(1) = 65: V(2) = 33 : REM Store waveform control byte for each voice
-unsigned int v[3] = { 17, 65, 33 };
+unsigned int v[3] = { 17, 65, 129 }; // These are to be stored in: 
+                              // (0xd404) v1 control register
+                              // 0001 0001 (17)
+                              // rpst omzg (r=random noise, p=pulse, s=sawtooth, t=triangle
+                              //            o=disable oscillator, m=ring mod. v1 with v3,
+                              //            z=synchronize v1 with v3, g=gate bit: 1=start attack+decay+sustain, 0=start release
+                              // (0xd40b) v2 control register
+                              // 0100 0001 (65)
+                              // rpst omzg (r=random noise, p=pulse, s=sawtooth, t=triangle
+                              //            o=disable oscillator, m=ring mod. v2 with v1,
+                              //            z=synchronize v2 with v1, g=gate bit: 1=start attack+decay+sustain, 0=start release
+                              // (0xd412) v3 control register
+                              // 1000 0001 (129)
+                              // rpst omzg (r=random noise, p=pulse, s=sawtooth, t=triangle
+                              //            o=disable oscillator, m=ring mod. v3 with v2,
+                              //            z=synchronize v3 with v2, g=gate bit: 1=start attack+decay+sustain, 0=start release
 
 
 // 20 DIM H(2,200), L(2,200), C(2,200)  : REM Dimension array to contain activity of song, 1/16th of a measure per location
-unsigned char h[3][400];
-unsigned char l[3][400];
-unsigned char c[3][400];
+unsigned char h[3][800];
+unsigned char l[3][800];
+unsigned char c[3][800];
 
 char *lyrics[40] =
 {
-  "     tu ngay hai dua yeu nhau mong      ",
-  "          uoc that nhieu...             ",
-  "     tu ngay hai dua yeu nhau long      ",
-  "          uoc bao nhieu...              ",
-  "      mong vang hai dua co chi la       ",
-  "         qua xa xoi: ta mo mot          ",
-  "       mai nha tranh, ta mo mot         ",
-  "      tup leu tinh. doi minh dep        ",
-  "            mai voi anh va              ",
-  "           em. doi minh dep             ",
-  "           mai duoi tup leu             ",
-  "                 xinh...                ",
-  "    roi minh di kiem lieu xanh minh     ",
-  "            ket lam manh.               ",
-  "   roi minh xin khom truc xinh trong    ",
-  "           het chung quanh.             ",
-  "    ngoai vuon hoa cuc, hoa mai nao     ",
-  "      khac chi tranh: ban mai minh      ",
-  "      ngam mau hoa, dem dem minh        ",
-  "     ngam chi hang. du ngheo cuoc       ",
-  "           song van them hao            ",
-  "           hao. doi minh dep            ",
-  "            qua co ai bang              ",
-  "                 ta...                  ",
-  "              tup leu ly                ",
-  "         tuong cua anh va cua           ",
-  "         em, dau dau nao anh            ",
-  "           oi? tup leu ly               ",
-  "         tuong cua em va cua            ",
-  "         anh, dau dau nao em            ",
-  "           oi? tup leu ly               ",
-  "         tuong do ta xay bang           ",
-  "     duyen bang tinh, khong ai ma       ",
-  "      yeu bang minh, khi ta dung        ",
-  "          nhin mot dan con              ",
-  "               xinh...                  ",
+  "        tin tin, tini mini hanim        ",
+  "          tin tin, tini mini hanim      ",
+  "           seni seviyor canim           ",
+  "             seni seviyor canim         ",
+  "        tin tin, tini mini hanim        ",
+  "          tin tin, tini mini hanim      ",
+  "           seni seviyor canim           ",
+  "             seni seviyor canim         ",
+  "            seftali agaclari            ",
+  "              seftali agaclari          ",
+  "           turlu cicek baslari          ",
+  "             turlu cicek baslari        ",
+  "            seftali agaclari            ",
+  "              seftali agaclari          ",
+  "           turlu cicek baslari          ",
+  "             turlu cicek baslari        ",
+  "        tin tin, tini mini hanim        ",
+  "          tin tin, tini mini hanim      ",
+  "           seni seviyor canim           ",
+  "             seni seviyor canim         ",
+  "        tin tin, tini mini hanim        ",
+  "          tin tin, tini mini hanim      ",
+  "           seni seviyor canim           ",
+  "             seni seviyor canim         ",
+  "           yakti yandirdi beni          ",
+  "             yakti yandirdi beni        ",
+  "           yarin hilal kaslari          ",
+  "             yarin hilal kaslari        ",
+  "           yakti yandirdi beni          ",
+  "             yakti yandirdi beni        ",
+  "           yarin hilal kaslari          ",
+  "             yarin hilal kaslari        ",
   NULL
 };
 
@@ -749,24 +417,24 @@ void intro_screen(void)
   __asm__ ( "JSR $FFD2" );                  // call CHROUT
 
   printf("\n\n\n\n");
-  printf("      cece's first demo (23/04/2018)\n");
-  printf("      =================\n\n\n");
+  printf("      cece's second demo (05/05/2018)\n");
+  printf("      ==================\n\n\n");
 
   __asm__ ( "LDA #158" ); // yellow colour for text
   __asm__ ( "JSR $FFD2" );                  // call CHROUT
 
-  printf("  aka. 'vietnamese karaoke machine'!!\n");
+  printf("  aka. 'turkish karaoke machine'!!\n");
   printf("\n\n");
 
-  printf("  tup leu ly tuong - by hoang thi tho\n\n\n");
-  printf("         dedicated to my camcam ;)\n\n\n");
+  printf("  tini mini hanim - by unknown\n\n\n");
+  printf("         dedicated to my mum ;)\n\n\n");
   printf("         press any key to begin");
   cgetc();
 }
 
 void load_petscii(void)
 {
-  char* file = "hut,s,r";
+  char* file = "xxx,s,r";
 
   // 5 POKE 53280,0:POKE 53281,0
   Poke(0xd020, 14); // light blue
@@ -774,6 +442,8 @@ void load_petscii(void)
 
   // clear the screen
   __asm__ ( "JSR $E544" );
+
+  return;
 
   // 10 OPEN 5,8,5,"TETRIS,S,R"
 
@@ -862,9 +532,10 @@ int main(void)
   init_sid();
 
   // 50 POKE S+10, 8: POKE S+22, 128: POKE S+23, 244 : REM Set high pulse width for voice 2 : Set high frequency for filter cutoff : Set resonance for filter and filter voice 3
-  Poke(_SID_+10, 8);   // Set high pulse width for voice 2
-  Poke(_SID_+22, 128); // Set high frequency for filter cutoff
-  Poke(_SID_+23, 244); // Set resonance for filter and filter voice 3
+  Poke(_SID_+10, 8);   // (0xd40a) Set high pulse width for voice 2
+  Poke(_SID_+22, 128); // (0xd416) Set high frequency for filter cutoff
+  Poke(_SID_+23, 244); // (0xd417) 1111 0100 Set resonance for filter and filter voice 3
+                                // rrrr e321 (r=filter resonance, e=filter external input, 1/2/3 = filter voice 1/2/3)
 
   // 100 FOR K = 0 TO 2 : REM Begin decoding loop for each voice.
   for (k = 0; k <= 2; k++)
@@ -894,20 +565,21 @@ int main(void)
       if (nm == 0)
         break;
 
+      /*
       if ((unsigned int)nm == MARKER)
       {
         marker_pos = i;
         idx++;
         continue;
-      }
+      }*/
 
-      if (nm > 0 && (nm & REPEAT_BACK_TO_MARKER))
+      /*if (nm > 0 && (nm & REPEAT_BACK_TO_MARKER))
       {
         repeat_to_marker_pos = i;
         repeat_to_marker_count = (nm - REPEAT_BACK_TO_MARKER);
         idx++;
         continue;
-      }
+      }*/
 
       if ((unsigned int)nm == REPEAT_TO_BEGINNING)
       {
@@ -918,7 +590,7 @@ int main(void)
 
       // 140 WA = V(K) : WB = WA - 1 : IF NM < 0 THEN NM = -NM : WA = 0 : WB = 0 : REM Set waveform controls to proper voice. If silence, set waveform controls to 0.
       wa = v[k]; // set the waveform control to proper voice
-      wb = wa - 1;
+      wb = wa - 1; // turn the gate-bit (bit0) of the voice's control-register off (releases the note from the sustain)
 
       if (nm < 0) // if encoded note value is negative, this equates to silence, so set waveform controls to 0.
       {
@@ -1014,19 +686,33 @@ int main(void)
   load_petscii();
 
   // 500 POKE S+5, 0 : POKE S+6, 240 : REM Set Attack/Decay for voice 1 (A=0, D=0) : Set Sustain/Release for voice 1 (S=15, R=0)
-  Poke(_SID_+5, 0);   // Set Attack/Decay for voice 1 (A=0, D=0)
-  Poke(_SID_+6, 240); // Set Sustain/Release for voice 1 (S=15, R=0)
+  Poke(_SID_+5, 0);   // (0xd405) Set Attack/Decay for voice 1 (A=0, D=0)
+                      // aaaa dddd (a=attack, d=decay)
+  Poke(_SID_+6, (15<<4) + 0); // Set Sustain/Release for voice 1 (S=15, R=0)
+                      // 1111 0000
+                      // ssss rrrr (s=sustain, r=release)
 
   // 510 POKE S+12, 85 : POKE S+13, 133 : REM Set Attack/Decay for voice 2 (A=5, D=5) : Set Sustain/Release for voice 2 (S=8,  R=5)
-  Poke(_SID_+12, 85);   // Set Attack/Decay for voice 2 (A=5, D=5)
-  Poke(_SID_+13, 133);  // Set Sustain/Release for voice 2 (S=8, R=5)
+  Poke(_SID_+12, 85);   // (0xd40c) Set Attack/Decay for voice 2 (A=5, D=5)
+                        // 0101 0101
+                        // aaaa dddd (a=attack, d=decay)
+  Poke(_SID_+13, 133);  // (0xd40d) Set Sustain/Release for voice 2 (S=8, R=5)
+                        // 1000 0101
+                        // ssss rrrr (s=sustain, r=release)
 
   // 520 POKE S+19, 10 : POKE S+20, 197 : REM Set Attack/Decay for voice 3 (A=0, D=10) : Set Sustain/Release for voice 3 (S=12, R=5)
-  Poke(_SID_+19, 10);   // Set Attack/Decay for voice 3 (A=0, D=10)
-  Poke(_SID_+20, 197);  // Set Sustain/Release for voice 3 (S=12, R=5)
+  Poke(_SID_+19, (0<<4) + 3);   // Set Attack/Decay for voice 3 (A=0, D=10)
+                        // 0000 1010
+                        // aaaa dddd (a=attack, d=decay)
+  Poke(_SID_+20, (0<<4) + 5);  // Set Sustain/Release for voice 3 (S=0, R=5)
+                        // 0000 0101
+                        // ssss rrrr (s=sustain, r=release)
 
   // 530 POKE S+24, 31 : REM Set volume 15, low-pass filtering.
-  Poke(_SID_+24, 31);   // Set volume 15, low-pass filtering
+  Poke(_SID_+24, 31);   // (0xd418) Set volume 15, low-pass filtering
+                        // 0001 1111
+                        // chbl vvvv (c=cutoff voice3 output 1=off/0=on, h=select high-pass filter, b=select band-pass filter,
+                        // l=select low-pass filter, v = volume)
 
   // 540 FOR I = 0 TO IM : REM Start loop for every 1/16th of a measure.
   rptcnt = repeat_to_marker_count;
@@ -1052,7 +738,7 @@ int main(void)
       continue;
     }
 
-    if ( ( i % 16 ) == 0)
+    if ( ( i % 32 ) == 0)
     {
       // show the next lyric
       
@@ -1076,19 +762,28 @@ int main(void)
 
     //printf("fr=%u\n", l[0][i] + 256*h[0][i]);
     // 550 POKE S,   L(0, I) : POKE S+7,  L(1, I) : POKE S+14, L(2, I) : REM POKE low frequency from activity array for all voices.
-    Poke(_SID_,    l[0][i]);
-    Poke(_SID_+7,  l[1][i]);
-    Poke(_SID_+14, l[2][i]);
+    Poke(_SID_,    l[0][i]);  // (0xd400) v1 freq lo-byte
+    Poke(_SID_+7,  l[1][i]);  // (0xd407) v2 freq lo-byte
+    Poke(_SID_+14, l[2][i]);  // (0xd40e) v3 freq lo-byte
 
     // 560 POKE S+1, H(0, I) : POKE S+8,  H(1, I) : POKE S+15, H(2, I) : REM POKE high frequency from activity array for all voices.
-    Poke(_SID_+1,  h[0][i]);
-    Poke(_SID_+8,  h[1][i]);
-    Poke(_SID_+15, h[2][i]);
+    Poke(_SID_+1,  h[0][i]);  // (0xd401) v1 freq hi-byte
+    Poke(_SID_+8,  h[1][i]);  // (0xd408) v2 freq hi-byte
+    Poke(_SID_+15, h[2][i]);  // (0xd40f) v3 freq hi-byte
 
     // 570 POKE S+4, C(0, I) : POKE S+11, C(1, I) : POKE S+18, C(2, I) : REM POKE waveform control from activity array for all voices.
-    Poke(_SID_+4,  c[0][i]);
-    Poke(_SID_+11, c[1][i]);
-    Poke(_SID_+18, c[2][i]);
+    Poke(_SID_+4,  c[0][i]);  // (0xd404) v1 control register
+                              // rpst omzg (r=random noise, p=pulse, s=sawtooth, t=triangle
+                              //            o=disable oscillator, m=ring mod. v1 with v3,
+                              //            z=synchronize v1 with v3, g=gate bit: 1=start attack+decay+sustain, 0=start release
+    Poke(_SID_+11, c[1][i]);  // (0xd40b) v2 control register
+                              // rpst omzg (r=random noise, p=pulse, s=sawtooth, t=triangle
+                              //            o=disable oscillator, m=ring mod. v2 with v1,
+                              //            z=synchronize v2 with v1, g=gate bit: 1=start attack+decay+sustain, 0=start release
+    Poke(_SID_+18, c[2][i]);  // (0xd412) v3 control register
+                              // rpst omzg (r=random noise, p=pulse, s=sawtooth, t=triangle
+                              //            o=disable oscillator, m=ring mod. v3 with v2,
+                              //            z=synchronize v3 with v2, g=gate bit: 1=start attack+decay+sustain, 0=start release
 
     /*
     printf("l0=%d,l1=%d,l2=%d\n",l[0][i], l[1][i], l[2][i]);
@@ -1098,7 +793,7 @@ int main(void)
     */
 
     // 580 FOR T = 1 TO 80 : NEXT : NEXT : REM Timing loop for 1/16th of a measure and back for next 1/16th measure.
-    for (t = 0; t < 1000; t++)
+    for (t = 0; t < 500; t++)
       ;
 
     i++;
@@ -1110,7 +805,11 @@ int main(void)
     ;
 
   // turn off volume
-  Poke(_SID_+24, 0);
+  Poke(_SID_+24, 0);    // (0xd418) Set volume 15, low-pass filtering
+                        // 0000 0000
+                        // chbl vvvv (c=cutoff voice3 output 1=off/0=on, h=select high-pass filter, b=select band-pass filter,
+                        // l=select low-pass filter, v = volume)
+
 
   // Encoding of durations
   // ---------------------
