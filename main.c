@@ -93,6 +93,7 @@ unsigned int addr;
 
 void init_sid(void)
 {
+  // 10 S = 54272 : FOR L = S TO S+24 : POKE L, 0 : NEXT
   for (addr = _SID_; addr <= (_SID_+24); addr++)
   {
     Poke(addr, 0);
@@ -356,9 +357,9 @@ unsigned int v[3] = { 17, 65, 129 }; // These are to be stored in:
 
 
 // 20 DIM H(2,200), L(2,200), C(2,200)  : REM Dimension array to contain activity of song, 1/16th of a measure per location
-unsigned char h[3][800];
-unsigned char l[3][800];
-unsigned char c[3][800];
+//unsigned char h[3][800];
+//unsigned char l[3][800];
+//unsigned char c[3][800];
 
 char *lyrics[40] =
 {
@@ -405,6 +406,14 @@ unsigned char st;   // the returned status value from JSR READST
 unsigned char fname_len, lo, hi;
 int lyric_idx = 0;
 
+int marker_pos = 0;     // the positon of the marker to repeat back to
+int repeat_to_marker_pos = 0;   // the position of the repeat-to-marker token
+int repeat_to_marker_count = 0; // the number of times to repeat back to marker
+int repeat_to_beginning_pos = 0; // the position of the repeat-to-beginning token
+int rptcnt = 0;       // a counter for the number of times to repeat a marked section of music
+int wa = 0;   // the currently decoded voice's control register value with gating on
+int wb = 0;   // the currently decoded voice's control register value with gating off
+  
 #pragma optimize(off)
 void check_st(void)
 {
@@ -512,12 +521,12 @@ int girly = 195;
 int frame = 1;
 int dir=0;
 
-void load_sprites(void)
+void update_sprites(void)
 {
   Poke(2040, 192+frame*3+dir*6); // pick sprite0 index
   Poke(2041, 193+frame*3+dir*6); // pick sprite1 index
   Poke(2042, 194+frame*3+dir*6); // pick sprite2 index
-  Poke(53269, 1+2+4);  // turn on sprite0+1+2
+  Poke(0xd015, (int)1+2+4);  // turn on sprite0+1+2
   Poke(0xd000, girlx & 0xff); // sprite0-x
   Poke(0xd001, girly); // sprite0-y
   Poke(0xd002, girlx & 0xff); // sprite1-x
@@ -525,13 +534,27 @@ void load_sprites(void)
   Poke(0xd004, girlx & 0xff); // sprite2-x
   Poke(0xd005, girly); // sprite2-y
   if (girlx > 0xff)
-    Poke(53264, 255);
+    Poke(0xd010, 255);
   else
-    Poke(53264, 0);   // spritex-msb
+    Poke(0xd010, 0);   // spritex-msb
 
-  Poke(0xD027, 0);  // Sprite0 color
-  Poke(0xD028, 10);  // Sprite1 color
-  Poke(0xD029, 3);  // Sprite2 color
+  Poke(0xd027, 0);  // Sprite0 color
+  Poke(0xd028, 10);  // Sprite1 color
+  Poke(0xd029, 3);  // Sprite2 color
+
+  // select direction & frame to use for girly animation
+  if (dir == 0)
+  {
+    girlx += 2;
+    if (girlx > 310) dir = 1;
+  }
+  else // dir == 1
+  {
+    girlx -= 2;
+    if (girlx < 25) dir = 0;
+  }
+  if (i % 2 == 0)
+    frame = (frame+1) % 2;
 
   // SPRITES ARE 24 PIXELS BY 21 PIXELS
   // LOCATION = (BANK * 16384) + (SPRITE POINTER VALUE * 64)
@@ -607,69 +630,44 @@ void invert_sprites(void)
   }
 }
 
-int main(void)
+// each loop iteration, let's just decode the bare-minimum of musical
+// note information needed (rather than decoding it all up-front!)
+int update_decoded_music(int i)
 {
-  int t;  // loop variable used for timers
-  int i;  // generic loop variable
-  int k;  // generic loop variable
-  int im = 0;   // the total length of the songs (in units of 1/16th measures)
+  static int idx[3] = { 0 };  // index to the current note+octave+duration value of each voice
+  static int remain[3] = { 0 };  // the duration remaining for the current note on this voice
 
-  int j = 0;
-  int wa = 0;
-  int wb = 0;
-  int dr = 0;
-  int oc = 0;
-  int nt = 0;
-  unsigned long fr = 0;
-  unsigned int hf;
-  unsigned int lf;
+  int k;
 
-  int marker_pos = 0;     // the positon of the marker to repeat back to
-  int repeat_to_marker_pos = 0;   // the position of the repeat-to-marker token
-  int repeat_to_marker_count = 0; // the number of times to repeat back to marker
-  int repeat_to_beginning_pos = 0; // the position of the repeat-to-beginning token
-  int rptcnt = 0;
-  
-  // switch back to upper-case
-  // https://www.cc65.org/mailarchive/2004-09/4446.html
-  Poke(0xd018, 0x15);
-
-  // 10 S = 54272 : FOR L = S TO S+24 : POKE L, 0 : NEXT
-  init_sid();
-
-  // 50 POKE S+10, 8: POKE S+22, 128: POKE S+23, 244 : REM Set high pulse width for voice 2 : Set high frequency for filter cutoff : Set resonance for filter and filter voice 3
-  Poke(_SID_+10, 8);   // (0xd40a) Set high pulse width for voice 2
-  Poke(_SID_+22, 128); // (0xd416) Set high frequency for filter cutoff
-  Poke(_SID_+23, 244); // (0xd417) 1111 0100 Set resonance for filter and filter voice 3
-                                // rrrr e321 (r=filter resonance, e=filter external input, 1/2/3 = filter voice 1/2/3)
-
-  // 100 FOR K = 0 TO 2 : REM Begin decoding loop for each voice.
+  // REM Begin decoding loop for each voice.
+  // 100 FOR K = 0 TO 2
   for (k = 0; k <= 2; k++)
   {
-    // 110 I=0 : REM Initialise pointer to activity array.
-    int i = 0;    // index into the activity buffer
-    int idx = 0;  // the index into the notes within a single single
-
     int *pvoice;
     if (k==0) pvoice = v1;
     if (k==1) pvoice = v2;
     if (k==2) pvoice = v3;
 
+    if (remain[k] == 0)
+    {
+      // read the next note
+      // 120 READ NM : REM Read coded note
+      int nm = pvoice[idx[k]];
+
+      // REM If coded note is zero, then end of the song, quit program?
+      // 130 IF NM = 0 THEN 250 
+      if (nm == 0)
+        return 0;
+    }
+
+    // 110 I=0 : REM Initialise pointer to activity array.
+    int i = 0;    // index into the activity buffer
+    int idx = 0;  // the index into the notes within a single single
+
     //printf("v=%d,l=%d,h=%d,c=%d\n", k, l[k], h[k], c[k]);
 
     while (pvoice[idx] != 0)
     {
-      // 120 READ NM : REM Read coded note
-      int nm = pvoice[idx];
-
-      //printf("i=%d : ",i);
-
-      //else
-      //  printf("fine\n");
-
-      // 130 IF NM = 0 THEN 250 : REM If coded note is zero, then next voice.
-      if (nm == 0)
-        break;
 
       /*
       if ((unsigned int)nm == MARKER)
@@ -785,13 +783,11 @@ int main(void)
     // 260 NEXT : REM Go back for next voice
   }
 
-  // Aha! Now we play what has been rendered by all 3 voices in those activity buffers...
-  // Sheesh... This seems like such a wasteful way of doing this, but oh well, let's see how it goes in c then...
+  return 1;
+}
 
-  intro_screen();
-  load_petscii();
-  invert_sprites();
-
+void prepare_ADSRs(void)
+{
   // 500 POKE S+5, 0 : POKE S+6, 240 : REM Set Attack/Decay for voice 1 (A=0, D=0) : Set Sustain/Release for voice 1 (S=15, R=0)
   Poke(_SID_+5, 0);   // (0xd405) Set Attack/Decay for voice 1 (A=0, D=0)
                       // aaaa dddd (a=attack, d=decay)
@@ -814,14 +810,37 @@ int main(void)
   Poke(_SID_+20, (0<<4) + 5);  // Set Sustain/Release for voice 3 (S=0, R=5)
                         // 0000 0101
                         // ssss rrrr (s=sustain, r=release)
+}
 
-  // 530 POKE S+24, 31 : REM Set volume 15, low-pass filtering.
-  Poke(_SID_+24, 31);   // (0xd418) Set volume 15, low-pass filtering
-                        // 0001 1111
-                        // chbl vvvv (c=cutoff voice3 output 1=off/0=on, h=select high-pass filter, b=select band-pass filter,
-                        // l=select low-pass filter, v = volume)
+void update_lyrics(int i)
+{
+  if ( ( i % 32 ) == 0)
+  {
+    // show the next lyric
+    
+    // home the cursor
+    __asm__ ( "JSR $E566" );
 
-  // 540 FOR I = 0 TO IM : REM Start loop for every 1/16th of a measure.
+    __asm__ ( "LDA #144" ); // black colour for text
+    __asm__ ( "JSR $FFD2" );                  // call CHROUT
+
+    for (k = 0; k<39; k++)
+    {
+      lo = lyrics[lyric_idx][k];
+      __asm__ ( "LDA %v", lo);
+      __asm__ ( "JSR $FFD2" );                  // call CHROUT
+    }
+    lyric_idx++;
+
+    if (lyrics[lyric_idx] == 0)
+      lyric_idx = 0;
+  }
+}
+
+void music_loop(void)
+{
+  //REM Start loop for every 1/32nd of a measure.
+  // 540 FOR I = 0 TO IM
   rptcnt = repeat_to_marker_count;
   i = 0;
   while (i <= im)
@@ -845,55 +864,25 @@ int main(void)
       continue;
     }
 
-    if ( ( i % 32 ) == 0)
-    {
-      // show the next lyric
-      
-      // home the cursor
-      __asm__ ( "JSR $E566" );
+    update_lyrics(i);
 
-      __asm__ ( "LDA #144" ); // black colour for text
-      __asm__ ( "JSR $FFD2" );                  // call CHROUT
-
-      for (k = 0; k<39; k++)
-      {
-        lo = lyrics[lyric_idx][k];
-        __asm__ ( "LDA %v", lo);
-        __asm__ ( "JSR $FFD2" );                  // call CHROUT
-      }
-      lyric_idx++;
-
-      if (lyrics[lyric_idx] == 0)
-        lyric_idx = 0;
-    }
-
-    load_sprites();
-    if (dir == 0)
-    {
-      girlx += 2;
-      if (girlx > 310) dir = 1;
-    }
-    else // dir == 1
-    {
-      girlx -= 2;
-      if (girlx < 25) dir = 0;
-    }
-    if (i % 2 == 0)
-      frame = (frame+1) % 2;
+    update_sprites(i);
   
+    update_decoded_music(i);
+
     //printf("fr=%u\n", l[0][i] + 256*h[0][i]);
     // 550 POKE S,   L(0, I) : POKE S+7,  L(1, I) : POKE S+14, L(2, I) : REM POKE low frequency from activity array for all voices.
-    Poke(_SID_,    l[0][i]);  // (0xd400) v1 freq lo-byte
-    Poke(_SID_+7,  l[1][i]);  // (0xd407) v2 freq lo-byte
-    Poke(_SID_+14, l[2][i]);  // (0xd40e) v3 freq lo-byte
+    Poke(_SID_,    l[0]);  // (0xd400) v1 freq lo-byte
+    Poke(_SID_+7,  l[1]);  // (0xd407) v2 freq lo-byte
+    Poke(_SID_+14, l[2]);  // (0xd40e) v3 freq lo-byte
 
     // 560 POKE S+1, H(0, I) : POKE S+8,  H(1, I) : POKE S+15, H(2, I) : REM POKE high frequency from activity array for all voices.
-    Poke(_SID_+1,  h[0][i]);  // (0xd401) v1 freq hi-byte
-    Poke(_SID_+8,  h[1][i]);  // (0xd408) v2 freq hi-byte
-    Poke(_SID_+15, h[2][i]);  // (0xd40f) v3 freq hi-byte
+    Poke(_SID_+1,  h[0]);  // (0xd401) v1 freq hi-byte
+    Poke(_SID_+8,  h[1]);  // (0xd408) v2 freq hi-byte
+    Poke(_SID_+15, h[2]);  // (0xd40f) v3 freq hi-byte
 
     // 570 POKE S+4, C(0, I) : POKE S+11, C(1, I) : POKE S+18, C(2, I) : REM POKE waveform control from activity array for all voices.
-    Poke(_SID_+4,  c[0][i]);  // (0xd404) v1 control register
+    Poke(_SID_+4,  c[0]);  // (0xd404) v1 control register
                               // rpst omzg (r=random noise, p=pulse, s=sawtooth, t=triangle
                               //            o=disable oscillator, m=ring mod. v1 with v3,
                               //            z=synchronize v1 with v3, g=gate bit: 1=start attack+decay+sustain, 0=start release
@@ -919,6 +908,54 @@ int main(void)
 
     i++;
   }
+}
+
+int main(void)
+{
+  int t;  // loop variable used for timers
+  int i;  // generic loop variable
+  int k;  // generic loop variable
+  int im = 0;   // the total length of the songs (in units of 1/16th measures)
+
+  int j = 0;
+  int dr = 0;
+  int oc = 0;
+  int nt = 0;
+  unsigned long fr = 0;
+  unsigned int hf;
+  unsigned int lf;
+
+  // switch back to upper-case
+  // https://www.cc65.org/mailarchive/2004-09/4446.html
+  Poke(0xd018, 0x15);
+
+  init_sid();
+
+  // REM Set high pulse width for voice 2 : Set high frequency for filter cutoff : Set resonance for filter and filter voice 3
+  // 50 POKE S+10, 8: POKE S+22, 128: POKE S+23, 244 
+  Poke(_SID_+10, 8);   // (0xd40a) Set high pulse width for voice 2
+  Poke(_SID_+22, 128); // (0xd416) Set high frequency for filter cutoff
+  Poke(_SID_+23, 244); // (0xd417) 1111 0100 Set resonance for filter and filter voice 3
+                                // rrrr e321 (r=filter resonance, e=filter external input, 1/2/3 = filter voice 1/2/3)
+
+  intro_screen();
+  load_petscii();
+  invert_sprites();
+
+  //decode_music();
+
+  // Aha! Now we play what has been rendered by all 3 voices in those activity buffers...
+  // Sheesh... This seems like such a wasteful way of doing this, but oh well, let's see how it goes in c then...
+
+  prepare_ADSRs();
+
+  // 530 POKE S+24, 31 : REM Set volume 15, low-pass filtering.
+  Poke(_SID_+24, 31);   // (0xd418) Set volume 15, low-pass filtering
+                        // 0001 1111
+                        // chbl vvvv (c=cutoff voice3 output 1=off/0=on, h=select high-pass filter, b=select band-pass filter,
+                        // l=select low-pass filter, v = volume)
+
+  music_loop();
 
   // 590 FOR T = 1 TO 200 : NEXT : POKE S+24, 0 : REM Pause, then turns off volume.
   // Final pause before ending eh...
