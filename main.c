@@ -356,10 +356,10 @@ unsigned int v[3] = { 17, 65, 129 }; // These are to be stored in:
                               //            z=synchronize v3 with v2, g=gate bit: 1=start attack+decay+sustain, 0=start release
 
 
-// 20 DIM H(2,200), L(2,200), C(2,200)  : REM Dimension array to contain activity of song, 1/16th of a measure per location
-//unsigned char h[3][800];
-//unsigned char l[3][800];
-//unsigned char c[3][800];
+// vars to hold hfreq, lfreq and control register values for the current 1/32nd measure (per voice)
+unsigned char h[3];   // current MSB frequency for each voice
+unsigned char l[3];   // current LSB frequency for each voice
+unsigned char c[3];   // current control register for each voice
 
 char *lyrics[40] =
 {
@@ -411,9 +411,17 @@ int repeat_to_marker_pos = 0;   // the position of the repeat-to-marker token
 int repeat_to_marker_count = 0; // the number of times to repeat back to marker
 int repeat_to_beginning_pos = 0; // the position of the repeat-to-beginning token
 int rptcnt = 0;       // a counter for the number of times to repeat a marked section of music
-int wa = 0;   // the currently decoded voice's control register value with gating on
-int wb = 0;   // the currently decoded voice's control register value with gating off
+int nm[3] = { 0 };   // the current encoded note-data value for each voice
+int wa[3] = { 0 };   // each decoded voice's control register value with gating on
+int wb[3] = { 0 };   // each decoded voice's control register value with gating off
   
+int dr = 0;   // duration of currently decoded note-data
+int oc = 0;   // octave of currently decoded note-data
+int nt = 0;   // note-in-octave of currently decoded note-data
+unsigned long fr = 0; // 16-bit frequency of currently decoded note-data
+unsigned int hf;      // MSB frequency of currently decoded note-data
+unsigned int lf;      // LSB frequency of currently decoded note-data
+
 #pragma optimize(off)
 void check_st(void)
 {
@@ -521,7 +529,7 @@ int girly = 195;
 int frame = 1;
 int dir=0;
 
-void update_sprites(void)
+void update_sprites(unsigned int i)
 {
   Poke(2040, 192+frame*3+dir*6); // pick sprite0 index
   Poke(2041, 193+frame*3+dir*6); // pick sprite1 index
@@ -630,9 +638,67 @@ void invert_sprites(void)
   }
 }
 
+
+void decode_note(int k)
+{
+  // Decode duration and octave.
+
+  // Encoding = dddd dooo nnnn  (where d=duration, o=octave, n=note)
+  dr = nm[k] / 128;
+  oc = (nm[k] - 128*dr) / 16;  // ok, now I get what they're doing here, overly verbose masking :)
+
+  // Decode note.
+  nt = (nm[k] - 128*dr) - 16*oc;   // more overly verbose masking :)
+}
+
+
+void calculate_note_frequency(void)
+{
+  // Get base frequency for this note.
+  fr = fq[nt];
+
+  //if (k == 1) // voice 2 debugging
+  //{
+    //printf("nm=%d dr=%d oc=%d nt=%d fr=%lu\n", nm, dr, oc, nt, fr);
+  //}
+
+  fr <<= 16;
+
+  // If highest octave, skip division loop.
+  if (oc != 7)
+  {
+    int j;
+    // Divide base frequency by 2 appropriate number of times.
+    for (j = 6; j >= oc; j--)
+      fr = fr / 2UL;
+  }
+
+  fr >>= 16;
+
+  // Get high and low frequency bytes.
+  hf = fr / 256U;
+  lf = fr - 256U * hf;
+}
+
+
+void prepare_waveform_control_registers(int k)
+{
+  // Set waveform controls to proper voice. If silence, set waveform controls to 0.
+  wa[k] = v[k];   // set the waveform control to proper voice
+  wb[k] = wa[k] - 1; // turn the gate-bit (bit0) of the voice's control-register off (releases the note from the sustain)
+
+  if (nm[k] < 0) // if encoded note value is negative, this equates to silence, so set waveform controls to 0.
+  {
+    nm[k] = -nm[k]; // invert it, and what remains equates to a duration value
+    wa[k] = 0;
+    wb[k] = 0;
+  }
+}
+
+
 // each loop iteration, let's just decode the bare-minimum of musical
 // note information needed (rather than decoding it all up-front!)
-int update_decoded_music(int i)
+int update_decoded_music(void)
 {
   static int idx[3] = { 0 };  // index to the current note+octave+duration value of each voice
   static int remain[3] = { 0 };  // the duration remaining for the current note on this voice
@@ -650,40 +716,57 @@ int update_decoded_music(int i)
 
     if (remain[k] == 0)
     {
-      // read the next note
-      // 120 READ NM : REM Read coded note
-      int nm = pvoice[idx[k]];
+      // read the next encoded note
+      nm[k] = pvoice[idx[k]];
 
-      // REM If coded note is zero, then end of the song, quit program?
-      // 130 IF NM = 0 THEN 250 
-      if (nm == 0)
+      // move index in preparation of next note (once this note finishes)
+      idx[k]++;
+
+      // If coded note is zero, then end of the song, quit program?
+      if (nm[k] == 0)
         return 0;
+
+      // preparing wa and wb vars
+      prepare_waveform_control_registers(k);
+
+      // figure out dr, oc & nt (duration, octave and note-within-octave)
+      decode_note(k);
+
+      // figure out fr, lf an hf (16-bit frequency and 8-bit LSB and MSB frequency values)
+      calculate_note_frequency();
+
+      // prepare start of note details
+      l[k] = lf;
+      h[k] = hf;
+      c[k] = wa[k];
+      remain[k] = dr;
+    }
+    else if (remain[k] == 1) // are we on the last 1/32nd of the present note? Time to gate off?
+    {
+      c[k] = c[k] & 0xFE; // assure gate-bit is turned off
     }
 
-    // 110 I=0 : REM Initialise pointer to activity array.
-    int i = 0;    // index into the activity buffer
-    int idx = 0;  // the index into the notes within a single single
+    remain[k]--;
 
     //printf("v=%d,l=%d,h=%d,c=%d\n", k, l[k], h[k], c[k]);
 
+    /*
     while (pvoice[idx] != 0)
     {
-
-      /*
       if ((unsigned int)nm == MARKER)
       {
         marker_pos = i;
         idx++;
         continue;
-      }*/
+      }
 
-      /*if (nm > 0 && (nm & REPEAT_BACK_TO_MARKER))
+      if (nm > 0 && (nm & REPEAT_BACK_TO_MARKER))
       {
         repeat_to_marker_pos = i;
         repeat_to_marker_count = (nm - REPEAT_BACK_TO_MARKER);
         idx++;
         continue;
-      }*/
+      }
 
       if ((unsigned int)nm == REPEAT_TO_BEGINNING)
       {
@@ -692,95 +775,12 @@ int update_decoded_music(int i)
         continue;
       }
 
-      // 140 WA = V(K) : WB = WA - 1 : IF NM < 0 THEN NM = -NM : WA = 0 : WB = 0 : REM Set waveform controls to proper voice. If silence, set waveform controls to 0.
-      wa = v[k]; // set the waveform control to proper voice
-      wb = wa - 1; // turn the gate-bit (bit0) of the voice's control-register off (releases the note from the sustain)
-
-      if (nm < 0) // if encoded note value is negative, this equates to silence, so set waveform controls to 0.
-      {
-        nm = -nm;
-        wa = 0;
-        wb = 0;
-      }
-
-      // 150 DR% = NM / 128 : OC% = (NM - 128 * DR%) / 16 : REM Decode duration and octave.
-
-      // Encoding = dddd dooo nnnn  (where d=duration, o=octave, n=note)
-      dr = nm / 128;
-      oc = (nm - 128*dr) / 16;  // ok, now I get what they're doing here, overly verbose masking :)
-
-      // 160 NT = NM - 128 * DR% - 16 * OC% : REM Decode note.
-      nt = (nm - 128*dr) - 16*oc;   // more overly verbose masking :)
-
-      // 170 FR = FQ(NT) : REM Get base frequency for this note.
-      fr = fq[nt];
-
-      if (k == 1) // voice 2 debugging
-      {
-        //printf("nm=%d dr=%d oc=%d nt=%d fr=%lu\n", nm, dr, oc, nt, fr);
-      }
-
-      fr <<= 16;
-
-      // 180 IF OC% = 7 THEN 200 : REM If highest octave, skip division loop.
-      if (oc != 7)
-      {
-        int j;
-        // 190 FOR J=6 TO OC% STEP -1: FR = FR / 2: NEXT : REM Divide base frequency by 2 appropriate number of times.
-        for (j = 6; j >= oc; j--)
-          fr = fr / 2UL;
-      }
-
-      fr >>= 16;
-
-      // 200 HF% = FR / 256 : LF% = FR - 256 * HF% : REM Get high and low frequency bytes.
-      hf = fr / 256U;
-      lf = fr - 256U * hf;
-
-      // 210 IF DR% = 1 THEN H(K,I) = HF% : L(K, I) = LF% : C(K, I) = WA : I=I+1 : GOTO 120: REM If sixteenth note, set activity array: high frequency, low frequency and waveform control (voice on)
-      if (dr == 1)
-      {
-        h[k][i] = hf;
-        l[k][i] = lf;
-        c[k][i] = wa;
-        i++;
-        idx++;
-        continue;
-      }
-
-      // 220 FOR J=1 TO DR%-1: H(K, I) = HF% : L(K, I) = LF% : C(K, I) = WA : I=I+1 : NEXT : REM For all but last beat of note, set activity array: high frequency, low frequency, waveform control (voice on)
-      for (j=1; j < dr; j++)
-      {
-        h[k][i] = hf;
-        l[k][i] = lf;
-        c[k][i] = wa;
-        i++;
-      }
-
-      // 230 H(K, I) = HF% : L(K, I) = LF% : C(K, I) = WB : REM For last beat of note, set activity array: high frequency, low frequency, waveform control (voice off)
-      h[k][i] = hf;
-      l[k][i] = lf;
-      c[k][i] = wb;
-
       //if (k == 0)
       {
         //printf("v=%d,i=%d,hf=%d,lf=%d,wa=%d,wb=%d\n",k,i,hf,lf,wa,wb);
         //cgetc();
       }
-
-
-      // 240 I = I + 1 : GOTO 120 : REM Increment pointer to activity array. Get next note.
-      i++;
-      idx++;
-    }
-
-    // ok, we finished rendering the present voice in the activity arrays... Now do other stuff...
-
-    // 250 IF I > IM THEN IM = I : REM If longer than before, reset number of activities.
-    if (i > im)
-      im = i; // keep track of the longest activity
-
-    // 260 NEXT : REM Go back for next voice
+    }*/
   }
 
   return 1;
@@ -814,6 +814,8 @@ void prepare_ADSRs(void)
 
 void update_lyrics(int i)
 {
+  int k;
+
   if ( ( i % 32 ) == 0)
   {
     // show the next lyric
@@ -839,14 +841,17 @@ void update_lyrics(int i)
 
 void music_loop(void)
 {
+  unsigned int i = 0;   // the number of 1/32nd measures that have transpired since start of the song
+  unsigned int t;  // loop variable used for timers
+
   //REM Start loop for every 1/32nd of a measure.
-  // 540 FOR I = 0 TO IM
   rptcnt = repeat_to_marker_count;
-  i = 0;
-  while (i <= im)
+
+  while (1)
   {
     //__asm__ ( "INC $D020" );
 
+    /*
     if (i == repeat_to_marker_pos && i != 0)
     {
       if (rptcnt > 0)
@@ -862,13 +867,13 @@ void music_loop(void)
       i = 0;
       rptcnt = repeat_to_marker_count;
       continue;
-    }
+    }*/
 
     update_lyrics(i);
 
     update_sprites(i);
   
-    update_decoded_music(i);
+    update_decoded_music();
 
     //printf("fr=%u\n", l[0][i] + 256*h[0][i]);
     // 550 POKE S,   L(0, I) : POKE S+7,  L(1, I) : POKE S+14, L(2, I) : REM POKE low frequency from activity array for all voices.
@@ -886,11 +891,11 @@ void music_loop(void)
                               // rpst omzg (r=random noise, p=pulse, s=sawtooth, t=triangle
                               //            o=disable oscillator, m=ring mod. v1 with v3,
                               //            z=synchronize v1 with v3, g=gate bit: 1=start attack+decay+sustain, 0=start release
-    Poke(_SID_+11, c[1][i]);  // (0xd40b) v2 control register
+    Poke(_SID_+11, c[1]);  // (0xd40b) v2 control register
                               // rpst omzg (r=random noise, p=pulse, s=sawtooth, t=triangle
                               //            o=disable oscillator, m=ring mod. v2 with v1,
                               //            z=synchronize v2 with v1, g=gate bit: 1=start attack+decay+sustain, 0=start release
-    Poke(_SID_+18, c[2][i]);  // (0xd412) v3 control register
+    Poke(_SID_+18, c[2]);  // (0xd412) v3 control register
                               // rpst omzg (r=random noise, p=pulse, s=sawtooth, t=triangle
                               //            o=disable oscillator, m=ring mod. v3 with v2,
                               //            z=synchronize v3 with v2, g=gate bit: 1=start attack+decay+sustain, 0=start release
@@ -902,28 +907,21 @@ void music_loop(void)
     cgetc();
     */
 
-    // 580 FOR T = 1 TO 80 : NEXT : NEXT : REM Timing loop for 1/16th of a measure and back for next 1/16th measure.
+    // 580 FOR T = 1 TO 80 : NEXT : NEXT : REM Timing loop for 1/32nd of a measure and back for next 1/32nd measure.
     for (t = 0; t < 500; t++)
       ;
 
-    i++;
+    i++; // increment to next 1/32nd measure
   }
 }
 
 int main(void)
 {
-  int t;  // loop variable used for timers
-  int i;  // generic loop variable
   int k;  // generic loop variable
+  unsigned int t;  // loop variable used for timers
   int im = 0;   // the total length of the songs (in units of 1/16th measures)
 
   int j = 0;
-  int dr = 0;
-  int oc = 0;
-  int nt = 0;
-  unsigned long fr = 0;
-  unsigned int hf;
-  unsigned int lf;
 
   // switch back to upper-case
   // https://www.cc65.org/mailarchive/2004-09/4446.html
