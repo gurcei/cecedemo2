@@ -2,6 +2,10 @@
  * CECE'S SECOND DEMO
  * ==================
  *
+ * 12/05/2018
+ * ----------
+ * Refined Music Engine to avoid using wasteful song preparation buffers.
+ *
  * 05/05/2018
  * ----------
  * Based on CECE'S FIRST DEMO
@@ -705,6 +709,28 @@ int update_decoded_music(void)
 
   int k;
 
+  // check for any special tokens/markers on any channels first (prior to decoding notes)
+  for (k = 0; k <= 2; k++)
+  {
+    int *pvoice;
+    if (k==0) pvoice = v1;
+    if (k==1) pvoice = v2;
+    if (k==2) pvoice = v3;
+
+    // read the next encoded note
+    nm[k] = pvoice[idx[k]];
+
+    if (remain[k] == 0 && (unsigned int)nm[k] == REPEAT_TO_BEGINNING)
+    {
+      idx[0] = 0;
+      idx[1] = 0;
+      idx[2] = 0;
+      remain[0] = 0;
+      remain[1] = 0;
+      remain[2] = 0;
+    }
+  }
+
   // REM Begin decoding loop for each voice.
   // 100 FOR K = 0 TO 2
   for (k = 0; k <= 2; k++)
@@ -724,7 +750,10 @@ int update_decoded_music(void)
 
       // If coded note is zero, then end of the song, quit program?
       if (nm[k] == 0)
-        return 0;
+      {
+        idx[k] = 0;
+        continue;
+      }
 
       // preparing wa and wb vars
       prepare_waveform_control_registers(k);
@@ -764,13 +793,6 @@ int update_decoded_music(void)
       {
         repeat_to_marker_pos = i;
         repeat_to_marker_count = (nm - REPEAT_BACK_TO_MARKER);
-        idx++;
-        continue;
-      }
-
-      if ((unsigned int)nm == REPEAT_TO_BEGINNING)
-      {
-        repeat_to_beginning_pos = i;
         idx++;
         continue;
       }
